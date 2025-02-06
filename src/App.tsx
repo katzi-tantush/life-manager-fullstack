@@ -13,7 +13,7 @@ function App() {
       try {
         setLoading(true);
         setError(null);
-        const result = await listFolders('11HMY8a0IYs2i04A_UPsLww6P-ppmBB1r');
+        const result = await listFolders();
         if (result.status === 'success' && result.folders) {
           setFolders(result.folders);
         } else {

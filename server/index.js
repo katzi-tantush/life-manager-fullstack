@@ -27,7 +27,8 @@ let driveClient = null;
 const initializeDriveClient = () => {
   if (!process.env.GOOGLE_PROJECT_ID || 
       !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
+      !process.env.GOOGLE_DRIVE_FOLDER_ID) {
     throw new Error('Missing required Google service account environment variables');
   }
 
@@ -58,7 +59,7 @@ try {
   console.error('Failed to initialize Google Drive client:', error.message);
 }
 
-apiRouter.get('/drive/folders/:folderId', async (req, res) => {
+apiRouter.get('/drive/folders', async (req, res) => {
   try {
     if (!driveClient) {
       return res.status(500).json({
@@ -67,7 +68,7 @@ apiRouter.get('/drive/folders/:folderId', async (req, res) => {
       });
     }
 
-    const folderId = req.params.folderId;
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
     
     const response = await driveClient.files.list({
       q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
