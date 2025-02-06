@@ -21,74 +21,49 @@ app.use(express.static(join(__dirname, '../dist')));
 // API Routes
 const apiRouter = express.Router();
 
-const serviceAccountSchema = z.object({
-  type: z.literal('service_account'),
-  project_id: z.string().min(1, "Project ID is required"),
-  private_key_id: z.string().min(1, "Private key ID is required"),
-  private_key: z.string()
-    .min(1, "Private key is required")
-    .includes("-----BEGIN PRIVATE KEY-----", "Private key must be in PEM format")
-    .includes("-----END PRIVATE KEY-----", "Private key must be in PEM format"),
-  client_email: z.string()
-    .email("Invalid client email format")
-    .endsWith('.gserviceaccount.com', "Client email must be a service account email"),
-  client_id: z.string().min(1, "Client ID is required"),
-  auth_uri: z.string()
-    .url("Invalid auth URI")
-    .startsWith('https://accounts.google.com/', "Invalid auth URI domain"),
-  token_uri: z.string()
-    .url("Invalid token URI")
-    .startsWith('https://oauth2.googleapis.com/', "Invalid token URI domain"),
-  auth_provider_x509_cert_url: z.string()
-    .url("Invalid auth provider cert URL")
-    .startsWith('https://www.googleapis.com/', "Invalid auth provider cert URL domain"),
-  client_x509_cert_url: z.string()
-    .url("Invalid client cert URL")
-    .includes('googleapis.com', "Invalid client cert URL domain")
-});
-
 let driveClient = null;
 
-apiRouter.post('/test-connection', async (req, res) => {
-  try {
-    console.log('Received credentials:', {
-      ...req.body,
-      private_key: req.body.private_key ? '[REDACTED]' : undefined
-    });
-    
-    const credentials = serviceAccountSchema.parse(req.body);
-    
-    // Create auth client
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/drive.readonly']
-    });
-
-    // Create Drive client
-    driveClient = google.drive({ version: 'v3', auth });
-    
-    res.json({ 
-      status: 'success', 
-      message: `Successfully validated service account for project ${credentials.project_id}`
-    });
-  } catch (error) {
-    console.error('Validation error:', error);
-    
-    res.status(400).json({ 
-      status: 'error', 
-      message: error instanceof z.ZodError 
-        ? 'Validation errors: ' + error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
-        : 'Failed to validate service account credentials'
-    });
+// Initialize Google Drive client with environment variables
+const initializeDriveClient = () => {
+  if (!process.env.GOOGLE_PROJECT_ID || 
+      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
+      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    throw new Error('Missing required Google service account environment variables');
   }
-});
+
+  const credentials = {
+    type: 'service_account',
+    project_id: process.env.GOOGLE_PROJECT_ID,
+    private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'), // Fix newlines if needed
+    client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+    token_uri: 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)}`
+  };
+
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ['https://www.googleapis.com/auth/drive.readonly']
+  });
+
+  return google.drive({ version: 'v3', auth });
+};
+
+// Initialize the drive client on startup
+try {
+  driveClient = initializeDriveClient();
+  console.log('Successfully initialized Google Drive client');
+} catch (error) {
+  console.error('Failed to initialize Google Drive client:', error.message);
+}
 
 apiRouter.get('/drive/folders/:folderId', async (req, res) => {
   try {
     if (!driveClient) {
-      return res.status(400).json({
+      return res.status(500).json({
         status: 'error',
-        message: 'Please validate your service account credentials first'
+        message: 'Google Drive client not initialized'
       });
     }
 
