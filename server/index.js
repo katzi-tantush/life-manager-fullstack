@@ -6,6 +6,9 @@ import { z } from 'zod';
 import { google } from 'googleapis';
 import multer from 'multer';
 import { Readable } from 'stream';
+import jwt from 'jsonwebtoken';
+import { expressjwt } from 'express-jwt';
+import { OAuth2Client } from 'google-auth-library';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -16,11 +19,24 @@ const port = process.env.PORT || 3000;
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Google OAuth client
+const client = new OAuth2Client();
+
+// Allowed email addresses
+const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
+
+// JWT secret key
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// JWT middleware
+const requireAuth = expressjwt({
+  secret: JWT_SECRET,
+  algorithms: ['HS256'],
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve static files from the dist directory
 app.use(express.static(join(__dirname, '../dist')));
 
 // API Routes
@@ -50,7 +66,7 @@ const initializeDriveClient = () => {
 
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/drive.file'] // Updated scope to allow file creation
+    scopes: ['https://www.googleapis.com/auth/drive.file']
   });
 
   return google.drive({ version: 'v3', auth });
@@ -64,7 +80,43 @@ try {
   console.error('Failed to initialize Google Drive client:', error.message);
 }
 
-apiRouter.get('/drive/folders', async (req, res) => {
+// Verify Google token and create session
+apiRouter.post('/auth/verify', async (req, res) => {
+  try {
+    const { token } = req.body;
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.VITE_GOOGLE_CLIENT_ID
+    });
+
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+
+    if (!email || !ALLOWED_EMAILS.includes(email)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized email address'
+      });
+    }
+
+    // Create session token
+    const sessionToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
+
+    res.json({
+      status: 'success',
+      email,
+      token: sessionToken
+    });
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(401).json({
+      status: 'error',
+      message: 'Invalid token'
+    });
+  }
+});
+
+apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
   try {
     if (!driveClient) {
       return res.status(500).json({
@@ -94,7 +146,7 @@ apiRouter.get('/drive/folders', async (req, res) => {
   }
 });
 
-apiRouter.post('/drive/upload', upload.single('file'), async (req, res) => {
+apiRouter.post('/drive/upload', requireAuth, upload.single('file'), async (req, res) => {
   try {
     if (!driveClient) {
       return res.status(500).json({
