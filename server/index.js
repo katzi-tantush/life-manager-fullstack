@@ -15,6 +15,9 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the dist directory
+app.use(express.static(join(__dirname, '../dist')));
+
 // API Routes
 const apiRouter = express.Router();
 
@@ -112,6 +115,11 @@ apiRouter.get('/drive/folders/:folderId', async (req, res) => {
 
 // Mount API routes
 app.use('/api', apiRouter);
+
+// Serve index.html for all other routes (client-side routing)
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, '../dist/index.html'));
+});
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
