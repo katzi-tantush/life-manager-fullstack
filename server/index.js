@@ -16,11 +16,18 @@ const __dirname = dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Configure OAuth2 client
+const oauth2Client = new google.auth.OAuth2(
+  process.env.VITE_GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000'
+);
+
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Google OAuth client
-const client = new OAuth2Client();
+// Google OAuth client for token verification
+const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
 
 // Allowed email addresses
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
@@ -48,8 +55,7 @@ let driveClient = null;
 const initializeDriveClient = () => {
   if (!process.env.GOOGLE_PROJECT_ID || 
       !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
-      !process.env.GOOGLE_DRIVE_FOLDER_ID) {
+      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
     throw new Error('Missing required Google service account environment variables');
   }
 

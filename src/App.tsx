@@ -6,6 +6,10 @@ import { listFolders, uploadFile, verifyToken } from './services/api';
 
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 
+if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+  throw new Error('Missing VITE_GOOGLE_CLIENT_ID environment variable');
+}
+
 function App() {
   const [folders, setFolders] = useState<DriveFolder[]>([]);
   const [loading, setLoading] = useState(true);

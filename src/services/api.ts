@@ -32,7 +32,10 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ 
+      token,
+      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID 
+    }),
   });
 
   if (!response.ok) {

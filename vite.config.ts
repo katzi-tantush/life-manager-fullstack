@@ -14,5 +14,4 @@ export default defineConfig({
       },
     },
   },
-  envPrefix: ['VITE_', 'GOOGLE_'], // Allow GOOGLE_ prefixed env variables
 });
