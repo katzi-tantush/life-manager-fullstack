@@ -35,10 +35,28 @@ const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 // JWT secret key
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// JWT middleware
+// JWT middleware with error handling
 const requireAuth = expressjwt({
   secret: JWT_SECRET,
-  algorithms: ['HS256'],
+  algorithms: ['HS256']
+});
+
+// Add error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Auth Error:', {
+    name: err.name,
+    message: err.message,
+    stack: err.stack,
+    token: req.headers.authorization
+  });
+  
+  if (err.name === 'UnauthorizedError') {
+    return res.status(401).json({
+      status: 'error',
+      message: 'Invalid token'
+    });
+  }
+  next(err);
 });
 
 // Middleware
@@ -107,8 +125,16 @@ apiRouter.post('/auth/verify', async (req, res) => {
       });
     }
 
-    // Create session token
-    const sessionToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1d' });
+    // Create session token with explicit algorithm
+    const sessionToken = jwt.sign({ email }, JWT_SECRET, { 
+      expiresIn: '1d',
+      algorithm: 'HS256'
+    });
+
+    console.log('Created session token:', {
+      email,
+      tokenLength: sessionToken.length
+    });
 
     res.json({
       status: 'success',
@@ -124,6 +150,7 @@ apiRouter.post('/auth/verify', async (req, res) => {
   }
 });
 
+// Protected routes
 apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
   try {
     if (!driveClient) {
@@ -132,6 +159,8 @@ apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
         message: 'Google Drive client not initialized'
       });
     }
+
+    console.log('Fetching folders for user:', req.auth?.email);
 
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
     
@@ -150,57 +179,6 @@ apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch folders: ' + error.message
-    });
-  }
-});
-
-apiRouter.post('/drive/upload', requireAuth, upload.single('file'), async (req, res) => {
-  try {
-    if (!driveClient) {
-      return res.status(500).json({
-        status: 'error',
-        message: 'Google Drive client not initialized'
-      });
-    }
-
-    if (!req.file) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'No file provided'
-      });
-    }
-
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    
-    const fileMetadata = {
-      name: req.file.originalname,
-      parents: [folderId]
-    };
-
-    const media = {
-      mimeType: req.file.mimetype,
-      body: Readable.from(req.file.buffer)
-    };
-
-    const response = await driveClient.files.create({
-      requestBody: fileMetadata,
-      media: media,
-      fields: 'id, name, webViewLink'
-    });
-
-    res.json({
-      status: 'success',
-      file: {
-        id: response.data.id,
-        name: response.data.name,
-        webViewLink: response.data.webViewLink
-      }
-    });
-  } catch (error) {
-    console.error('Drive API error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to upload file: ' + error.message
     });
   }
 });
