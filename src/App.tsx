@@ -95,6 +95,9 @@ function App() {
       if (response.status === 'success' && response.email) {
         if (ALLOWED_EMAILS.includes(response.email)) {
           localStorage.setItem('googleToken', credentialResponse.credential);
+          if (response.token) { // Only store the JWT if it exists
+            localStorage.setItem('jwt', response.token);
+          }
           setIsAuthenticated(true);
           setUserEmail(response.email);
           setError(null);
@@ -111,6 +114,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('googleToken');
+    localStorage.removeItem('jwt');
     setIsAuthenticated(false);
     setUserEmail(null);
     setFolders([]);

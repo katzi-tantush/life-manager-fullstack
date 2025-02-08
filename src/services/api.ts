@@ -16,6 +16,7 @@ export interface ApiResponse {
 
 export interface AuthResponse extends ApiResponse {
   email?: string;
+  token?: string;
 }
 
 export interface DriveFoldersResponse extends ApiResponse {
@@ -46,10 +47,9 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
 }
 
 export async function listFolders(): Promise<DriveFoldersResponse> {
-  const token = localStorage.getItem('googleToken');
   const response = await fetch('/api/drive/folders', {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
     },
   });
 
@@ -61,14 +61,13 @@ export async function listFolders(): Promise<DriveFoldersResponse> {
 }
 
 export async function uploadFile(file: File): Promise<DriveUploadResponse> {
-  const token = localStorage.getItem('googleToken');
   const formData = new FormData();
   formData.append('file', file);
 
   const response = await fetch('/api/drive/upload', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${token}`,
+      'Authorization': `Bearer ${localStorage.getItem('jwt')}`,
     },
     body: formData,
   });
