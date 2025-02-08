@@ -32,31 +32,42 @@ const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 // Allowed email addresses
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 
-// JWT secret key
+// JWT secret key - ensure this is set in environment variables
+if (!process.env.JWT_SECRET) {
+  console.warn('WARNING: JWT_SECRET not set in environment variables. Using default secret (not recommended for production)');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// JWT middleware with error handling
+// JWT middleware with detailed configuration
 const requireAuth = expressjwt({
   secret: JWT_SECRET,
-  algorithms: ['HS256']
+  algorithms: ['HS256'],
+  requestProperty: 'auth',
+  getToken: function fromHeaderOrQuerystring(req) {
+    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
+      const token = req.headers.authorization.split(' ')[1];
+      console.log('Received token:', token ? token.substring(0, 10) + '...' : 'none');
+      return token;
+    }
+    return null;
+  }
 });
 
 // Add error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Auth Error Details:', {
-    name: err.name,
-    message: err.message,
-    stack: err.stack,
-    token: req.headers.authorization,
-    secret: JWT_SECRET ? 'Set' : 'Not Set',
-    secretLength: JWT_SECRET?.length
-  });
-  
   if (err.name === 'UnauthorizedError') {
+    console.error('Auth Error Details:', {
+      name: err.name,
+      message: err.message,
+      code: err.code,
+      status: err.status,
+      headers: req.headers,
+      token: req.headers.authorization ? 'Present' : 'Missing',
+    });
+    
     return res.status(401).json({
       status: 'error',
-      message: `Authentication error: ${err.message}`,
-      code: err.code
+      message: 'Authentication failed: ' + err.message
     });
   }
   next(err);
@@ -74,17 +85,24 @@ let driveClient = null;
 
 // Initialize Google Drive client with environment variables
 const initializeDriveClient = () => {
-  if (!process.env.GOOGLE_PROJECT_ID || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
-      !process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID) {
-    throw new Error('Missing required Google service account environment variables');
+  const requiredVars = {
+    GOOGLE_PROJECT_ID: process.env.GOOGLE_PROJECT_ID,
+    GOOGLE_SERVICE_ACCOUNT_EMAIL: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    GOOGLE_SERVICE_ACCOUNT_KEY: process.env.GOOGLE_SERVICE_ACCOUNT_KEY,
+    GOOGLE_DRIVE_FOLDER_ID: process.env.GOOGLE_DRIVE_FOLDER_ID
+  };
+
+  const missingVars = Object.entries(requiredVars)
+    .filter(([_, value]) => !value)
+    .map(([key]) => key);
+
+  if (missingVars.length > 0) {
+    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
 
   const credentials = {
     type: 'service_account',
     project_id: process.env.GOOGLE_PROJECT_ID,
-    client_id: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID,
     private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -113,6 +131,9 @@ try {
 apiRouter.post('/auth/verify', async (req, res) => {
   try {
     const { token } = req.body;
+    
+    console.log('Verifying token for client ID:', process.env.GOOGLE_WEB_CLIENT_ID);
+    
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience: process.env.GOOGLE_WEB_CLIENT_ID
@@ -128,27 +149,35 @@ apiRouter.post('/auth/verify', async (req, res) => {
       });
     }
 
-    // Create session token with explicit algorithm
-    const sessionToken = jwt.sign({ email }, JWT_SECRET, { 
-      expiresIn: '1d',
-      algorithm: 'HS256'
-    });
+    // Create JWT token with necessary claims
+    const jwtToken = jwt.sign(
+      { 
+        email,
+        sub: payload.sub,
+        iat: Math.floor(Date.now() / 1000)
+      },
+      JWT_SECRET,
+      { 
+        algorithm: 'HS256',
+        expiresIn: '1d'
+      }
+    );
 
-    console.log('Created session token:', {
+    console.log('Auth successful:', {
       email,
-      tokenLength: sessionToken.length
+      tokenCreated: !!jwtToken
     });
 
     res.json({
       status: 'success',
       email,
-      token: sessionToken
+      token: jwtToken
     });
   } catch (error) {
     console.error('Auth error:', error);
     res.status(401).json({
       status: 'error',
-      message: 'Invalid token'
+      message: 'Authentication failed: ' + error.message
     });
   }
 });
@@ -163,7 +192,7 @@ apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
       });
     }
 
-    console.log('Fetching folders for user:', req.auth?.email);
+    console.log('Authenticated user:', req.auth?.email);
 
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
     
