@@ -34,7 +34,7 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
     },
     body: JSON.stringify({ 
       token,
-      clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID 
+      clientId: import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID 
     }),
   });
 

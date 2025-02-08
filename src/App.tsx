@@ -6,8 +6,8 @@ import { listFolders, uploadFile, verifyToken } from './services/api';
 
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 
-if (!import.meta.env.VITE_GOOGLE_CLIENT_ID) {
-  throw new Error('Missing VITE_GOOGLE_CLIENT_ID environment variable');
+if (!import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID) {
+  throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
 }
 
 function App() {
@@ -119,7 +119,7 @@ function App() {
 
   if (!isAuthenticated) {
     return (
-      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID}>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="max-w-md w-full mx-4">
             <div className="bg-white rounded-lg shadow-lg p-8">

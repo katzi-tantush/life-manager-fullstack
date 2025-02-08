@@ -18,7 +18,7 @@ const port = process.env.PORT || 3000;
 
 // Configure OAuth2 client
 const oauth2Client = new google.auth.OAuth2(
-  process.env.VITE_GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_WEB_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000'
 );
@@ -27,7 +27,7 @@ const oauth2Client = new google.auth.OAuth2(
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Google OAuth client for token verification
-const client = new OAuth2Client(process.env.VITE_GOOGLE_CLIENT_ID);
+const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 
 // Allowed email addresses
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
@@ -55,13 +55,15 @@ let driveClient = null;
 const initializeDriveClient = () => {
   if (!process.env.GOOGLE_PROJECT_ID || 
       !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+      !process.env.GOOGLE_SERVICE_ACCOUNT_KEY ||
+      !process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID) {
     throw new Error('Missing required Google service account environment variables');
   }
 
   const credentials = {
     type: 'service_account',
     project_id: process.env.GOOGLE_PROJECT_ID,
+    client_id: process.env.GOOGLE_SERVICE_ACCOUNT_CLIENT_ID,
     private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     auth_uri: 'https://accounts.google.com/o/oauth2/auth',
@@ -92,7 +94,7 @@ apiRouter.post('/auth/verify', async (req, res) => {
     const { token } = req.body;
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.VITE_GOOGLE_CLIENT_ID
+      audience: process.env.GOOGLE_WEB_CLIENT_ID
     });
 
     const payload = ticket.getPayload();
