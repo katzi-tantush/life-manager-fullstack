@@ -1,4 +1,8 @@
-export function validateEnvironment() {
+export const config = {
+    allowedEmails: ['eitankatzenell@gmail.com', 'yekelor@gmail.com']
+  };
+  
+  export function validateEnvironment() {
     const requiredVars = [
       'GOOGLE_WEB_CLIENT_ID',
       'GOOGLE_SERVICE_ACCOUNT_EMAIL',
