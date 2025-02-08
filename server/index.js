@@ -43,17 +43,20 @@ const requireAuth = expressjwt({
 
 // Add error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Auth Error:', {
+  console.error('Auth Error Details:', {
     name: err.name,
     message: err.message,
     stack: err.stack,
-    token: req.headers.authorization
+    token: req.headers.authorization,
+    secret: JWT_SECRET ? 'Set' : 'Not Set',
+    secretLength: JWT_SECRET?.length
   });
   
   if (err.name === 'UnauthorizedError') {
     return res.status(401).json({
       status: 'error',
-      message: 'Invalid token'
+      message: `Authentication error: ${err.message}`,
+      code: err.code
     });
   }
   next(err);
