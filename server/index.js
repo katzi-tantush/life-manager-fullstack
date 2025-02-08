@@ -6,8 +6,6 @@ import { z } from 'zod';
 import { google } from 'googleapis';
 import multer from 'multer';
 import { Readable } from 'stream';
-import jwt from 'jsonwebtoken';
-import { expressjwt } from 'express-jwt';
 import { OAuth2Client } from 'google-auth-library';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,13 +13,6 @@ const __dirname = dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-// Configure OAuth2 client
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_WEB_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000'
-);
 
 // Configure multer for memory storage
 const upload = multer({ storage: multer.memoryStorage() });
@@ -32,46 +23,41 @@ const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
 // Allowed email addresses
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 
-// JWT secret key - ensure this is set in environment variables
-if (!process.env.JWT_SECRET) {
-  console.warn('WARNING: JWT_SECRET not set in environment variables. Using default secret (not recommended for production)');
-}
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-// JWT middleware with detailed configuration
-const requireAuth = expressjwt({
-  secret: JWT_SECRET,
-  algorithms: ['HS256'],
-  requestProperty: 'auth',
-  getToken: function fromHeaderOrQuerystring(req) {
-    if (req.headers.authorization && req.headers.authorization.split(' ')[0] === 'Bearer') {
-      const token = req.headers.authorization.split(' ')[1];
-      console.log('Received token:', token ? token.substring(0, 10) + '...' : 'none');
-      return token;
+// Middleware to verify Google token
+const verifyGoogleToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'No token provided'
+      });
     }
-    return null;
-  }
-});
 
-// Add error handling middleware
-app.use((err, req, res, next) => {
-  if (err.name === 'UnauthorizedError') {
-    console.error('Auth Error Details:', {
-      name: err.name,
-      message: err.message,
-      code: err.code,
-      status: err.status,
-      headers: req.headers,
-      token: req.headers.authorization ? 'Present' : 'Missing',
+    const token = authHeader.split(' ')[1];
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_WEB_CLIENT_ID
     });
-    
-    return res.status(401).json({
+
+    const payload = ticket.getPayload();
+    if (!payload?.email || !ALLOWED_EMAILS.includes(payload.email)) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Unauthorized email address'
+      });
+    }
+
+    req.user = payload;
+    next();
+  } catch (error) {
+    console.error('Auth error:', error);
+    res.status(401).json({
       status: 'error',
-      message: 'Authentication failed: ' + err.message
+      message: 'Authentication failed'
     });
   }
-  next(err);
-});
+};
 
 // Middleware
 app.use(cors());
@@ -127,12 +113,10 @@ try {
   console.error('Failed to initialize Google Drive client:', error.message);
 }
 
-// Verify Google token and create session
+// Verify Google token
 apiRouter.post('/auth/verify', async (req, res) => {
   try {
     const { token } = req.body;
-    
-    console.log('Verifying token for client ID:', process.env.GOOGLE_WEB_CLIENT_ID);
     
     const ticket = await client.verifyIdToken({
       idToken: token,
@@ -149,29 +133,9 @@ apiRouter.post('/auth/verify', async (req, res) => {
       });
     }
 
-    // Create JWT token with necessary claims
-    const jwtToken = jwt.sign(
-      { 
-        email,
-        sub: payload.sub,
-        iat: Math.floor(Date.now() / 1000)
-      },
-      JWT_SECRET,
-      { 
-        algorithm: 'HS256',
-        expiresIn: '1d'
-      }
-    );
-
-    console.log('Auth successful:', {
-      email,
-      tokenCreated: !!jwtToken
-    });
-
     res.json({
       status: 'success',
-      email,
-      token: jwtToken
+      email
     });
   } catch (error) {
     console.error('Auth error:', error);
@@ -183,7 +147,7 @@ apiRouter.post('/auth/verify', async (req, res) => {
 });
 
 // Protected routes
-apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
+apiRouter.get('/drive/folders', verifyGoogleToken, async (req, res) => {
   try {
     if (!driveClient) {
       return res.status(500).json({
@@ -191,8 +155,6 @@ apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
         message: 'Google Drive client not initialized'
       });
     }
-
-    console.log('Authenticated user:', req.auth?.email);
 
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
     
@@ -211,6 +173,57 @@ apiRouter.get('/drive/folders', requireAuth, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to fetch folders: ' + error.message
+    });
+  }
+});
+
+apiRouter.post('/drive/upload', verifyGoogleToken, upload.single('file'), async (req, res) => {
+  try {
+    if (!driveClient) {
+      return res.status(500).json({
+        status: 'error',
+        message: 'Google Drive client not initialized'
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No file provided'
+      });
+    }
+
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+    
+    const fileMetadata = {
+      name: req.file.originalname,
+      parents: [folderId]
+    };
+
+    const media = {
+      mimeType: req.file.mimetype,
+      body: Readable.from(req.file.buffer)
+    };
+
+    const response = await driveClient.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id, name, webViewLink'
+    });
+
+    res.json({
+      status: 'success',
+      file: {
+        id: response.data.id,
+        name: response.data.name,
+        webViewLink: response.data.webViewLink
+      }
+    });
+  } catch (error) {
+    console.error('Drive API error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to upload file: ' + error.message
     });
   }
 });
