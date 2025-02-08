@@ -8,6 +8,7 @@ import { FolderList } from './components/drive/FolderList';
 import { ErrorAlert } from './components/common/ErrorAlert';
 import { useAuthContext } from './context/AuthContext';
 import { useDriveContext } from './context/DriveContext';
+import { DriveProvider } from './context/DriveContext';
 
 if (!import.meta.env.VITE_GOOGLE_WEB_CLIENT_ID) {
   throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
@@ -46,7 +47,11 @@ function App() {
     );
   }
 
-  return <DriveManager />;
+  return (
+    <DriveProvider>
+      <DriveManager />
+    </DriveProvider>
+  );
 }
 
 function AppWithProviders() {
