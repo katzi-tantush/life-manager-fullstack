@@ -3,7 +3,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/environment.js';
 
 const router = Router();
-const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
+const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 
 router.post('/verify', async (req, res) => {
   try {
@@ -16,7 +16,7 @@ router.post('/verify', async (req, res) => {
       });
     }
 
-    if (!process.env.GOOGLE_WEB_CLIENT_ID) {
+    if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
       return res.status(500).json({
         status: 'error',
         message: 'Server configuration error: Missing Google client ID'
@@ -26,7 +26,7 @@ router.post('/verify', async (req, res) => {
     try {
       const ticket = await client.verifyIdToken({
         idToken: token,
-        audience: process.env.GOOGLE_WEB_CLIENT_ID
+        audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
 
       const payload = ticket.getPayload();

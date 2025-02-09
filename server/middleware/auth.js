@@ -1,12 +1,12 @@
 import { OAuth2Client } from 'google-auth-library';
 
-const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
+const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 const ALLOWED_EMAILS = ['eitankatzenell@gmail.com', 'yekelor@gmail.com'];
 
 export async function verifyGoogleToken(token) {
   const ticket = await client.verifyIdToken({
     idToken: token,
-    audience: process.env.GOOGLE_WEB_CLIENT_ID
+    audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
   });
 
   const payload = ticket.getPayload();
