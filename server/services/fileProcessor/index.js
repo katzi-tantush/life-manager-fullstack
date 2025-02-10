@@ -1,5 +1,4 @@
 import { processImage } from './imageProcessor.js';
-import { validateFileType } from '../../utils/validation.js';
 
 const SUPPORTED_IMAGE_TYPES = [
   'image/jpeg',
@@ -24,6 +23,9 @@ export async function processFile(file) {
     throw new Error('Unsupported file type');
   } catch (error) {
     console.error('File processing error:', error);
-    throw error;
+    return {
+      status: 'error',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    };
   }
 }

@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { processFile } from '../services/fileProcessor/index.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { userAuthMiddleware } from '../middleware/auth.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
-router.post('/file', authMiddleware, upload.single('file'), async (req, res) => {
+router.post('/file', userAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
