@@ -12,10 +12,10 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
+      credentials: 'include', // Important for cookies
       body: JSON.stringify({ token }),
     });
 
-    // Handle non-OK responses
     if (!response.ok) {
       if (response.status === 502) {
         throw new Error('Server is temporarily unavailable. Please try again in a moment.');
@@ -26,10 +26,8 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
       throw new Error(`Authentication failed: ${response.statusText}`);
     }
 
-    // Parse response
     const data = await response.json();
     
-    // Validate response structure
     if (!data || typeof data.status !== 'string') {
       throw new Error('Invalid server response');
     }
@@ -41,5 +39,16 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
       status: 'error',
       message: error instanceof Error ? error.message : 'Authentication failed',
     };
+  }
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
   }
 }

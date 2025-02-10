@@ -30,7 +30,12 @@
     "jsonwebtoken": "^9.0.2",
     "express-jwt": "^8.4.1",
     "heic-convert": "^2.1.0",
-    "sharp": "^0.33.2"
+    "sharp": "^0.33.2",
+    "express-session": "^1.18.0",
+    "connect-redis": "^7.1.1",
+    "redis": "^4.6.13",
+    "cookie-parser": "^1.4.6",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -40,6 +45,9 @@
     "@types/cors": "^2.8.17",
     "@types/multer": "^1.4.11",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/express-session": "^1.17.10",
+    "@types/cookie-parser": "^1.4.7",
+    "@types/uuid": "^9.0.8",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/environment.js';
+import { createSession, deleteSession } from '../services/session.js';
 
 const router = Router();
 const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
@@ -49,6 +50,17 @@ router.post('/verify', async (req, res) => {
         });
       }
 
+      // Create session
+      const sessionId = await createSession(payload);
+
+      // Set session cookie
+      res.cookie('sessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      });
+
       // Success response
       res.json({
         status: 'success',
@@ -61,7 +73,6 @@ router.post('/verify', async (req, res) => {
         clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
       });
 
-      // Handle specific verification errors
       if (verifyError.message.includes('Token used too late')) {
         return res.status(401).json({
           status: 'error',
@@ -79,6 +90,23 @@ router.post('/verify', async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Authentication failed'
+    });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    const sessionId = req.cookies.sessionId;
+    if (sessionId) {
+      await deleteSession(sessionId);
+      res.clearCookie('sessionId');
+    }
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to logout'
     });
   }
 });

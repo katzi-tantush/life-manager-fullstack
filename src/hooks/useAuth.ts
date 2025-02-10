@@ -1,9 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { AuthResponse } from '../types/auth';
-import { verifyToken } from '../services/api/auth';
-import { config } from '../services/config';
+import { verifyToken, logout as apiLogout } from '../services/api/auth';
 import { isAllowedEmail } from '../utils/auth';
-import { getStoredToken, setStoredToken, removeStoredToken } from '../utils/auth';
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -12,18 +10,10 @@ export function useAuth() {
 
   const login = useCallback(async (credentialResponse: any) => {
     try {
-      // Clear any existing tokens first
-      removeStoredToken();
-      
-      // Validate credential response
       if (!credentialResponse?.credential) {
         throw new Error('Invalid credential response');
       }
 
-      // Store token immediately to ensure it's available for subsequent requests
-      setStoredToken(credentialResponse.credential);
-
-      // Verify token with backend
       const response = await verifyToken(credentialResponse.credential);
       
       if (response.status === 'success' && response.email) {
@@ -33,52 +23,53 @@ export function useAuth() {
           setError(null);
           return true;
         } else {
-          removeStoredToken();
           setError('Unauthorized email address');
         }
       } else {
-        removeStoredToken();
         setError(response.message || 'Failed to verify token');
       }
     } catch (err) {
-      removeStoredToken();
       console.error('Login error:', err);
       setError(err instanceof Error ? err.message : 'Authentication failed');
     }
     return false;
   }, []);
 
-  const logout = useCallback(() => {
-    removeStoredToken();
-    setIsAuthenticated(false);
-    setUserEmail(null);
-    setError(null);
+  const logout = useCallback(async () => {
+    try {
+      await apiLogout();
+      setIsAuthenticated(false);
+      setUserEmail(null);
+      setError(null);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
   }, []);
 
   const checkAuth = useCallback(async () => {
     try {
-      const token = getStoredToken();
-      if (!token) {
-        logout();
-        return false;
-      }
-
-      const response = await verifyToken(token);
-      if (response.status === 'success' && response.email) {
-        if (isAllowedEmail(response.email)) {
+      const response = await fetch('/api/auth/check', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success' && data.email) {
           setIsAuthenticated(true);
-          setUserEmail(response.email);
-          setError(null);
+          setUserEmail(data.email);
           return true;
         }
       }
-      logout();
+      
+      setIsAuthenticated(false);
+      setUserEmail(null);
     } catch (err) {
       console.error('Auth check error:', err);
-      logout();
+      setIsAuthenticated(false);
+      setUserEmail(null);
     }
     return false;
-  }, [logout]);
+  }, []);
 
   return {
     isAuthenticated,
