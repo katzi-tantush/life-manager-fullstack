@@ -1,19 +1,19 @@
 import type { AuthResponse } from '../../types/auth';
+import { AUTH_ENDPOINTS } from '../../constants/auth';
 
-export async function verifyToken(token: string): Promise<AuthResponse> {
+export async function verifyToken(credential: string): Promise<AuthResponse> {
   try {
-    if (!token) {
-      throw new Error('No token provided');
+    if (!credential) {
+      throw new Error('No credential provided');
     }
 
-    const response = await fetch('/api/auth/verify', {
+    const response = await fetch(AUTH_ENDPOINTS.VERIFY, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
       },
-      credentials: 'include', // Important for cookies
-      body: JSON.stringify({ token }),
+      credentials: 'include',
+      body: JSON.stringify({ credential }),
     });
 
     if (!response.ok) {
@@ -44,7 +44,7 @@ export async function verifyToken(token: string): Promise<AuthResponse> {
 
 export async function logout(): Promise<void> {
   try {
-    await fetch('/api/auth/logout', {
+    await fetch(AUTH_ENDPOINTS.LOGOUT, {
       method: 'POST',
       credentials: 'include',
     });

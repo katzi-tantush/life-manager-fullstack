@@ -8,13 +8,13 @@ const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 
 router.post('/verify', async (req, res) => {
   try {
-    const { token } = req.body;
+    const { credential } = req.body;
     
     // Validate request
-    if (!token || typeof token !== 'string') {
+    if (!credential || typeof credential !== 'string') {
       return res.status(400).json({
         status: 'error',
-        message: 'Invalid token format'
+        message: 'Invalid credential format'
       });
     }
 
@@ -30,7 +30,7 @@ router.post('/verify', async (req, res) => {
     try {
       // Verify token
       const ticket = await client.verifyIdToken({
-        idToken: token,
+        idToken: credential,
         audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
 
@@ -69,8 +69,7 @@ router.post('/verify', async (req, res) => {
     } catch (verifyError) {
       console.error('Token verification error:', {
         error: verifyError,
-        tokenPresent: !!token,
-        clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
+        credentialPresent: !!credential
       });
 
       if (verifyError.message.includes('Token used too late')) {
