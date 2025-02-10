@@ -31,6 +31,12 @@ export async function verifyGoogleToken(credential) {
     }
 
     if (!credential || typeof credential !== 'string') {
+      if (!credential) {
+        throw new Error("no credentials")
+      }
+      if (typeof credential !== 'string') {
+        throw new Error("credentials are not a string")
+      }
       throw new Error(AUTH_ERRORS.INVALID_TOKEN);
     }
 
