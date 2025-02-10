@@ -1,36 +1,56 @@
 import type { DriveFoldersResponse, DriveUploadResponse } from '../../types/drive';
+import { TOKEN_STORAGE_KEYS } from '../../constants/auth';
+import { handleApiError } from '../../utils/error';
 
 export async function listFolders(): Promise<DriveFoldersResponse> {
-  const token = localStorage.getItem('googleToken');
-  const response = await fetch('/api/drive/folders', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
 
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
+    const response = await fetch('/api/drive/folders', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch folders: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    throw handleApiError(error);
   }
-
-  return response.json();
 }
 
 export async function uploadFile(file: File): Promise<DriveUploadResponse> {
-  const token = localStorage.getItem('googleToken');
-  const formData = new FormData();
-  formData.append('file', file);
+  try {
+    const token = localStorage.getItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
 
-  const response = await fetch('/api/drive/upload', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-    body: formData,
-  });
+    const formData = new FormData();
+    formData.append('file', file);
 
-  if (!response.ok) {
-    throw new Error('Network response was not ok');
+    const response = await fetch('/api/drive/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload file: ${response.statusText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    throw handleApiError(error);
   }
-
-  return response.json();
 }

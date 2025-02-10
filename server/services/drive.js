@@ -5,19 +5,21 @@ import { serviceAccountConfig } from '../config/service-account.js';
 let driveServiceClient = null;
 
 function initializeDriveServiceClient() {
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_KEY || !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) {
+    throw new Error('Missing Google service account credentials');
+  }
+
   const credentials = {
-    type: 'service_account',
-    private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
     client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    scopes: serviceAccountConfig.scopes
+    private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n')
   };
 
-  const serviceAuth = new google.auth.GoogleAuth({
+  const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: serviceAccountConfig.scopes
+    scopes: ['https://www.googleapis.com/auth/drive.file']
   });
 
-  return google.drive({ version: 'v3', auth: serviceAuth });
+  return google.drive({ version: 'v3', auth });
 }
 
 export function getDriveServiceClient() {
@@ -28,11 +30,15 @@ export function getDriveServiceClient() {
 }
 
 export async function listFolders() {
-  const driveService = getDriveServiceClient();
-  const folderId = serviceAccountConfig.driveFolderId;
+  const drive = getDriveServiceClient();
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
   
+  if (!folderId) {
+    throw new Error('Missing Google Drive folder ID');
+  }
+
   try {
-    const response = await driveService.files.list({
+    const response = await drive.files.list({
       q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
       fields: 'files(id, name)',
       orderBy: 'name'
@@ -46,15 +52,18 @@ export async function listFolders() {
     console.error('Drive API error:', error);
     return {
       status: 'error',
-      message: 'Failed to fetch folders',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Failed to fetch folders: ' + (error instanceof Error ? error.message : 'Unknown error')
     };
   }
 }
 
 export async function uploadFile(file) {
-  const driveService = getDriveServiceClient();
-  const folderId = serviceAccountConfig.driveFolderId;
+  const drive = getDriveServiceClient();
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+
+  if (!folderId) {
+    throw new Error('Missing Google Drive folder ID');
+  }
 
   try {
     const fileMetadata = {
@@ -67,7 +76,7 @@ export async function uploadFile(file) {
       body: Readable.from(file.buffer)
     };
 
-    const response = await driveService.files.create({
+    const response = await drive.files.create({
       requestBody: fileMetadata,
       media: media,
       fields: 'id, name, webViewLink'
@@ -81,8 +90,7 @@ export async function uploadFile(file) {
     console.error('Drive API error:', error);
     return {
       status: 'error',
-      message: 'Failed to upload file',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      message: 'Failed to upload file: ' + (error instanceof Error ? error.message : 'Unknown error')
     };
   }
 }
