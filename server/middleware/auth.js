@@ -1,7 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/environment.js';
 
-const client = new OAuth2Client();
+const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 
 function extractToken(authHeader) {
   if (!authHeader) {
@@ -31,15 +31,13 @@ export async function verifyGoogleToken(token) {
       throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
     }
 
-    if (!token || typeof token !== 'string') {
+    // Verify it's a string token from Google OAuth
+    if (!token || typeof token !== 'string' || token.length < 50) {
       throw new Error('Invalid token format');
     }
 
-    // Initialize with the correct client ID
-    const oauth2Client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
-
     try {
-      const ticket = await oauth2Client.verifyIdToken({
+      const ticket = await client.verifyIdToken({
         idToken: token,
         audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
@@ -60,24 +58,15 @@ export async function verifyGoogleToken(token) {
 
       return payload;
     } catch (verifyError) {
-      // Handle specific token errors
-      if (verifyError.message.includes('Token used too late')) {
-        throw new Error('Token has expired. Please sign in again.');
-      }
-      if (verifyError.message.includes('Invalid token signature')) {
-        throw new Error('Invalid token signature. Please sign in again.');
-      }
-      if (verifyError.message.includes('Wrong number of segments')) {
-        throw new Error('Malformed token. Please sign in again.');
-      }
-      throw new Error(`Token verification failed: ${verifyError.message}`);
+      console.error('Token verification error:', {
+        error: verifyError.message,
+        tokenPresent: !!token,
+        tokenLength: token?.length
+      });
+      throw verifyError;
     }
   } catch (error) {
-    console.error('Token verification error:', {
-      error: error.message,
-      tokenPresent: !!token,
-      clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
-    });
+    console.error('Auth error:', error);
     throw error;
   }
 }
@@ -96,7 +85,6 @@ export function authMiddleware(req, res, next) {
 
     verifyGoogleToken(token)
       .then(user => {
-        // Store user info in request for downstream middleware/routes
         req.user = {
           email: user.email,
           name: user.name,
@@ -106,17 +94,11 @@ export function authMiddleware(req, res, next) {
         next();
       })
       .catch(error => {
-        // Log detailed error information
         console.error('Auth middleware error:', {
           message: error.message,
-          stack: error.stack,
-          headers: {
-            authorization: req.headers.authorization ? 'present' : 'missing',
-            contentType: req.headers['content-type']
-          }
+          stack: error.stack
         });
         
-        // Send appropriate error response
         const status = error.message.includes('expired') ? 401 : 
                       error.message.includes('Unauthorized') ? 403 : 401;
         
