@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import multer from 'multer';
-import { verifyGoogleToken } from '../middleware/auth.js';
+import { userAuthMiddleware } from '../middleware/auth.js';
 import { listFolders, uploadFile } from '../services/drive.js';
 
 const upload = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
-router.get('/folders', verifyGoogleToken, async (req, res) => {
+router.get('/folders', userAuthMiddleware, async (req, res) => {
   try {
     const folders = await listFolders();
     res.json({
@@ -22,7 +22,7 @@ router.get('/folders', verifyGoogleToken, async (req, res) => {
   }
 });
 
-router.post('/upload', verifyGoogleToken, upload.single('file'), async (req, res) => {
+router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
