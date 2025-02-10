@@ -1,7 +1,13 @@
 import { processImage } from './imageProcessor.js';
 import { validateFileType } from '../../utils/validation.js';
 
-const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const SUPPORTED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif'
+];
 
 export async function processFile(file) {
   try {
@@ -10,7 +16,7 @@ export async function processFile(file) {
       throw new Error('Invalid file');
     }
 
-    // Check if file is an image
+    // Check if file is a supported image type
     if (SUPPORTED_IMAGE_TYPES.includes(file.mimetype)) {
       return await processImage(file);
     }
