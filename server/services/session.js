@@ -1,24 +1,22 @@
-import { createClient } from 'redis';
 import { v4 as uuidv4 } from 'uuid';
 
-let redisClient;
+// In-memory session store
+const sessions = new Map();
 
-export async function initializeRedis() {
-  try {
-    redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379'
-    });
+// Clean up expired sessions periodically
+const CLEANUP_INTERVAL = 1000 * 60 * 60; // 1 hour
+const SESSION_TTL = 1000 * 60 * 60 * 24; // 24 hours
 
-    redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-    await redisClient.connect();
-    
-    console.log('Redis client connected successfully');
-    return redisClient;
-  } catch (error) {
-    console.error('Failed to initialize Redis:', error);
-    throw error;
+function cleanupSessions() {
+  const now = Date.now();
+  for (const [sessionId, session] of sessions.entries()) {
+    if (now - session.lastAccessed > SESSION_TTL) {
+      sessions.delete(sessionId);
+    }
   }
 }
+
+setInterval(cleanupSessions, CLEANUP_INTERVAL);
 
 export async function createSession(userData) {
   try {
@@ -33,13 +31,7 @@ export async function createSession(userData) {
       lastAccessed: Date.now()
     };
 
-    // Store session with 24-hour expiration
-    await redisClient.set(
-      `session:${sessionId}`,
-      JSON.stringify(sessionData),
-      { EX: 24 * 60 * 60 }
-    );
-
+    sessions.set(sessionId, sessionData);
     return sessionId;
   } catch (error) {
     console.error('Failed to create session:', error);
@@ -49,18 +41,12 @@ export async function createSession(userData) {
 
 export async function getSession(sessionId) {
   try {
-    const sessionData = await redisClient.get(`session:${sessionId}`);
-    if (!sessionData) return null;
+    const session = sessions.get(sessionId);
+    if (!session) return null;
 
-    const session = JSON.parse(sessionData);
-    
     // Update last accessed time
     session.lastAccessed = Date.now();
-    await redisClient.set(
-      `session:${sessionId}`,
-      JSON.stringify(session),
-      { EX: 24 * 60 * 60 }
-    );
+    sessions.set(sessionId, session);
 
     return session;
   } catch (error) {
@@ -71,7 +57,7 @@ export async function getSession(sessionId) {
 
 export async function deleteSession(sessionId) {
   try {
-    await redisClient.del(`session:${sessionId}`);
+    sessions.delete(sessionId);
   } catch (error) {
     console.error('Failed to delete session:', error);
     throw error;
@@ -87,15 +73,9 @@ export async function refreshSession(sessionId) {
     const newSessionId = uuidv4();
     
     // Store session with new ID
-    await redisClient.set(
-      `session:${newSessionId}`,
-      JSON.stringify({
-        ...session,
-        id: newSessionId,
-        lastAccessed: Date.now()
-      }),
-      { EX: 24 * 60 * 60 }
-    );
+    session.id = newSessionId;
+    session.lastAccessed = Date.now();
+    sessions.set(newSessionId, session);
 
     // Delete old session
     await deleteSession(sessionId);

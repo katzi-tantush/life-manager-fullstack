@@ -7,7 +7,6 @@ import authRouter from './routes/auth.js';
 import driveRouter from './routes/drive.js';
 import processRouter from './routes/process.js';
 import { validateEnvironment } from './config/environment.js';
-import { initializeRedis } from './services/session.js';
 import { sessionMiddleware } from './middleware/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,9 +14,6 @@ const __dirname = dirname(__filename);
 
 // Validate environment variables
 validateEnvironment();
-
-// Initialize Redis
-await initializeRedis();
 
 const app = express();
 const port = process.env.PORT || 3000;
