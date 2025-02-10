@@ -1,12 +1,12 @@
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config/environment.js';
 
-const client = new OAuth2Client(process.env.GOOGLE_WEB_CLIENT_ID);
+const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 
 export async function verifyGoogleToken(token) {
   try {
-    if (!process.env.GOOGLE_WEB_CLIENT_ID) {
-      throw new Error('Missing GOOGLE_WEB_CLIENT_ID environment variable');
+    if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
+      throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
     }
 
     if (!token || typeof token !== 'string') {
@@ -16,7 +16,7 @@ export async function verifyGoogleToken(token) {
     try {
       const ticket = await client.verifyIdToken({
         idToken: token,
-        audience: process.env.GOOGLE_WEB_CLIENT_ID
+        audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
 
       const payload = ticket.getPayload();
@@ -42,7 +42,7 @@ export async function verifyGoogleToken(token) {
     console.error('Token verification error:', {
       error,
       tokenPresent: !!token,
-      clientId: process.env.GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
+      clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
     });
     throw error;
   }
