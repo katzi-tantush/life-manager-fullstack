@@ -1,4 +1,4 @@
-import type { AuthResponse, GoogleCredentialResponse } from '../../types/auth';
+import type { AuthResponse } from '../../types/auth';
 import { AUTH_ENDPOINTS, TOKEN_STORAGE_KEYS } from '../../constants/auth';
 import { handleApiError } from '../../utils/error';
 
@@ -22,13 +22,30 @@ export async function verifyUserCredential(credential: string): Promise<AuthResp
         throw new Error('Server is temporarily unavailable. Please try again.');
       }
       if (response.status === 401) {
-        throw new Error('User authentication failed. Please sign in again.');
+        throw new Error('Authentication failed. Please sign in again.');
       }
       throw new Error(`Authentication failed: ${response.statusText}`);
     }
 
     const data = await response.json();
     return data;
+  } catch (error) {
+    throw handleApiError(error);
+  }
+}
+
+export async function refreshToken(): Promise<AuthResponse> {
+  try {
+    const response = await fetch(AUTH_ENDPOINTS.REFRESH, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
+
+    return response.json();
   } catch (error) {
     throw handleApiError(error);
   }

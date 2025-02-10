@@ -12,6 +12,7 @@ export interface AuthResponse {
   status: 'success' | 'error';
   message?: string;
   email?: string;
+  token?: string;  // Add token property
 }
 
 export type GoogleCredentialResponse = CredentialResponse;

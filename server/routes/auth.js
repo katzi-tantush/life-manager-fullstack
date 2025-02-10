@@ -53,7 +53,8 @@ router.post('/verify', async (req, res) => {
 
       res.json({
         status: 'success',
-        email: payload.email
+        email: payload.email,
+        token: credential  // Include the token in the response
       });
     } catch (verifyError) {
       console.error('Token verification error:', {
@@ -82,23 +83,6 @@ router.post('/verify', async (req, res) => {
   }
 });
 
-router.post('/logout', async (req, res) => {
-  try {
-    const sessionId = req.cookies.sessionId;
-    if (sessionId) {
-      await deleteSession(sessionId);
-      res.clearCookie('sessionId');
-    }
-    res.json({ status: 'success' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: AUTH_ERRORS.SERVER_ERROR
-    });
-  }
-});
-
 router.post('/refresh', async (req, res) => {
   try {
     const currentSessionId = req.cookies.sessionId;
@@ -120,9 +104,33 @@ router.post('/refresh', async (req, res) => {
     // Set new session cookie
     res.cookie('sessionId', newSessionId, oauthConfig.sessionCookie);
 
-    res.json({ status: 'success' });
+    // Generate new token
+    const session = await getSession(newSessionId);
+    const token = await userAuthClient.getToken(); // Get fresh token
+
+    res.json({
+      status: 'success',
+      token: token.tokens.id_token // Include the new token in the response
+    });
   } catch (error) {
     console.error('Session refresh error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: AUTH_ERRORS.SERVER_ERROR
+    });
+  }
+});
+
+router.post('/logout', async (req, res) => {
+  try {
+    const sessionId = req.cookies.sessionId;
+    if (sessionId) {
+      await deleteSession(sessionId);
+      res.clearCookie('sessionId');
+    }
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({
       status: 'error',
       message: AUTH_ERRORS.SERVER_ERROR
