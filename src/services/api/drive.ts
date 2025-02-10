@@ -20,8 +20,16 @@ export async function listFolders(): Promise<DriveFoldersResponse> {
       throw new Error(`Failed to fetch folders: ${response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    // Ensure we have an array of folders
+    if (data.status === 'success' && Array.isArray(data.folders)) {
+      return data;
+    } else {
+      throw new Error('Invalid response format from server');
+    }
   } catch (error) {
+    console.error('Drive API error:', error);
     throw handleApiError(error);
   }
 }
