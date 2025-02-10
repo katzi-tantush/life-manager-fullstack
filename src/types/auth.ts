@@ -1,9 +1,11 @@
-import type { AllowedEmail } from '../services/config';
+import type { TokenPayload } from 'google-auth-library';
+import type { CredentialResponse } from '@react-oauth/google';
 
 export interface AuthUser {
-  email: AllowedEmail;
+  email: string;
   name?: string;
   picture?: string;
+  sub: string;
 }
 
 export interface AuthResponse {
@@ -11,3 +13,6 @@ export interface AuthResponse {
   message?: string;
   email?: string;
 }
+
+export type GoogleCredentialResponse = CredentialResponse;
+export type GoogleTokenPayload = TokenPayload;

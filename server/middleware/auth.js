@@ -1,69 +1,69 @@
 import { OAuth2Client } from 'google-auth-library';
-import { config } from '../config/environment.js';
+import { oauthConfig } from '../config/oauth.js';
+import { AUTH_ERRORS } from '../constants/auth.js';
 
-const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
+const client = new OAuth2Client({
+  clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID
+});
 
 function extractToken(authHeader) {
   if (!authHeader) {
-    throw new Error('No authorization header provided');
+    throw new Error(AUTH_ERRORS.MISSING_TOKEN);
   }
 
-  // Remove any extra whitespace
   const trimmedHeader = authHeader.trim();
-
-  // Check for Bearer prefix
   if (!trimmedHeader.startsWith('Bearer ')) {
-    throw new Error('Invalid authorization format. Must be Bearer token');
+    throw new Error(AUTH_ERRORS.INVALID_TOKEN);
   }
 
-  // Extract and clean the token
   const token = trimmedHeader.slice(7).trim();
   if (!token) {
-    throw new Error('Token is empty');
+    throw new Error(AUTH_ERRORS.MISSING_TOKEN);
   }
 
   return token;
 }
 
-export async function verifyGoogleToken(token) {
+export async function verifyGoogleToken(credential) {
   try {
     if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
       throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
     }
 
-    // Verify it's a string token from Google OAuth
-    if (!token || typeof token !== 'string' || token.length < 50) {
-      throw new Error('Invalid token format');
+    if (!credential || typeof credential !== 'string') {
+      throw new Error(AUTH_ERRORS.INVALID_TOKEN);
     }
 
     try {
       const ticket = await client.verifyIdToken({
-        idToken: token,
+        idToken: credential,
         audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
 
       const payload = ticket.getPayload();
-      
       if (!payload) {
-        throw new Error('No payload received from token verification');
+        throw new Error(AUTH_ERRORS.INVALID_TOKEN);
       }
 
       if (!payload.email) {
-        throw new Error('No email found in token payload');
+        throw new Error(AUTH_ERRORS.INVALID_TOKEN);
       }
 
-      if (!config.allowedEmails.includes(payload.email)) {
-        throw new Error('Unauthorized email address');
+      if (!oauthConfig.allowedEmails.includes(payload.email)) {
+        throw new Error(AUTH_ERRORS.UNAUTHORIZED);
       }
 
       return payload;
     } catch (verifyError) {
       console.error('Token verification error:', {
         error: verifyError.message,
-        tokenPresent: !!token,
-        tokenLength: token?.length
+        credentialLength: credential?.length
       });
-      throw verifyError;
+      
+      if (verifyError.message.includes('expired')) {
+        throw new Error(AUTH_ERRORS.EXPIRED_TOKEN);
+      }
+      throw new Error(AUTH_ERRORS.INVALID_TOKEN);
     }
   } catch (error) {
     console.error('Auth error:', error);
@@ -99,21 +99,21 @@ export function authMiddleware(req, res, next) {
           stack: error.stack
         });
         
-        const status = error.message.includes('expired') ? 401 : 
-                      error.message.includes('Unauthorized') ? 403 : 401;
+        const status = error.message === AUTH_ERRORS.EXPIRED_TOKEN ? 401 : 
+                      error.message === AUTH_ERRORS.UNAUTHORIZED ? 403 : 401;
         
         res.status(status).json({
           status: 'error',
-          message: error.message || 'Authentication failed',
-          code: error.message.includes('expired') ? 'TOKEN_EXPIRED' :
-                error.message.includes('Unauthorized') ? 'UNAUTHORIZED' : 'AUTH_FAILED'
+          message: error.message || AUTH_ERRORS.INVALID_TOKEN,
+          code: error.message === AUTH_ERRORS.EXPIRED_TOKEN ? 'TOKEN_EXPIRED' :
+                error.message === AUTH_ERRORS.UNAUTHORIZED ? 'UNAUTHORIZED' : 'AUTH_FAILED'
         });
       });
   } catch (error) {
     console.error('Auth middleware unexpected error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Internal server error during authentication',
+      message: AUTH_ERRORS.SERVER_ERROR,
       code: 'INTERNAL_ERROR'
     });
   }
