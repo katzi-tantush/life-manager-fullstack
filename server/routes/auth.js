@@ -1,35 +1,33 @@
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-import { config } from '../config/environment.js';
-import { createSession, deleteSession } from '../services/session.js';
+import { oauthConfig } from '../config/oauth.js';
+import { createSession, deleteSession, refreshSession } from '../services/session.js';
+import { AUTH_ERRORS } from '../constants/auth.js';
 
 const router = Router();
-const client = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
+const userAuthClient = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
 
 router.post('/verify', async (req, res) => {
   try {
     const { credential } = req.body;
     
-    // Validate request
     if (!credential || typeof credential !== 'string') {
       return res.status(400).json({
         status: 'error',
-        message: 'Invalid credential format'
+        message: AUTH_ERRORS.INVALID_TOKEN
       });
     }
 
-    // Validate environment
     if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
       console.error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
       return res.status(500).json({
         status: 'error',
-        message: 'Server configuration error'
+        message: AUTH_ERRORS.SERVER_ERROR
       });
     }
 
     try {
-      // Verify token
-      const ticket = await client.verifyIdToken({
+      const ticket = await userAuthClient.verifyIdToken({
         idToken: credential,
         audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
@@ -38,30 +36,21 @@ router.post('/verify', async (req, res) => {
       if (!payload?.email) {
         return res.status(400).json({
           status: 'error',
-          message: 'Invalid token: No email found'
+          message: AUTH_ERRORS.INVALID_TOKEN
         });
       }
 
-      // Check allowed emails
-      if (!config.allowedEmails.includes(payload.email)) {
+      if (!oauthConfig.allowedEmails.includes(payload.email)) {
         return res.status(403).json({
           status: 'error',
-          message: 'Unauthorized email address'
+          message: AUTH_ERRORS.UNAUTHORIZED
         });
       }
 
-      // Create session
       const sessionId = await createSession(payload);
 
-      // Set session cookie
-      res.cookie('sessionId', sessionId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-      });
+      res.cookie('sessionId', sessionId, oauthConfig.sessionCookie);
 
-      // Success response
       res.json({
         status: 'success',
         email: payload.email
@@ -75,20 +64,20 @@ router.post('/verify', async (req, res) => {
       if (verifyError.message.includes('Token used too late')) {
         return res.status(401).json({
           status: 'error',
-          message: 'Token has expired'
+          message: AUTH_ERRORS.EXPIRED_TOKEN
         });
       }
 
       res.status(401).json({
         status: 'error',
-        message: 'Invalid token'
+        message: AUTH_ERRORS.INVALID_TOKEN
       });
     }
   } catch (error) {
     console.error('Auth error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Authentication failed'
+      message: AUTH_ERRORS.SERVER_ERROR
     });
   }
 });
@@ -105,7 +94,38 @@ router.post('/logout', async (req, res) => {
     console.error('Logout error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to logout'
+      message: AUTH_ERRORS.SERVER_ERROR
+    });
+  }
+});
+
+router.post('/refresh', async (req, res) => {
+  try {
+    const currentSessionId = req.cookies.sessionId;
+    if (!currentSessionId) {
+      return res.status(401).json({
+        status: 'error',
+        message: AUTH_ERRORS.MISSING_TOKEN
+      });
+    }
+
+    const newSessionId = await refreshSession(currentSessionId);
+    if (!newSessionId) {
+      return res.status(401).json({
+        status: 'error',
+        message: AUTH_ERRORS.INVALID_TOKEN
+      });
+    }
+
+    // Set new session cookie
+    res.cookie('sessionId', newSessionId, oauthConfig.sessionCookie);
+
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Session refresh error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: AUTH_ERRORS.SERVER_ERROR
     });
   }
 });

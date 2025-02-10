@@ -1,9 +1,9 @@
 import React from 'react';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 import { ErrorAlert } from '../common/ErrorAlert';
 
 interface LoginFormProps {
-  onSuccess: (credentialResponse: any) => void;
+  onSuccess: (credentialResponse: CredentialResponse) => void;
   error: string | null;
 }
 

@@ -2,9 +2,9 @@ import { google } from 'googleapis';
 import { Readable } from 'stream';
 import { serviceAccountConfig } from '../config/service-account.js';
 
-let driveClient = null;
+let driveServiceClient = null;
 
-function initializeDriveClient() {
+function initializeDriveServiceClient() {
   const credentials = {
     type: 'service_account',
     private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
@@ -12,27 +12,27 @@ function initializeDriveClient() {
     scopes: serviceAccountConfig.scopes
   };
 
-  const auth = new google.auth.GoogleAuth({
+  const serviceAuth = new google.auth.GoogleAuth({
     credentials,
     scopes: serviceAccountConfig.scopes
   });
 
-  return google.drive({ version: 'v3', auth });
+  return google.drive({ version: 'v3', auth: serviceAuth });
 }
 
-export function getDriveClient() {
-  if (!driveClient) {
-    driveClient = initializeDriveClient();
+export function getDriveServiceClient() {
+  if (!driveServiceClient) {
+    driveServiceClient = initializeDriveServiceClient();
   }
-  return driveClient;
+  return driveServiceClient;
 }
 
 export async function listFolders() {
-  const drive = getDriveClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const driveService = getDriveServiceClient();
+  const folderId = serviceAccountConfig.driveFolderId;
   
   try {
-    const response = await drive.files.list({
+    const response = await driveService.files.list({
       q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
       fields: 'files(id, name)',
       orderBy: 'name'
@@ -53,8 +53,8 @@ export async function listFolders() {
 }
 
 export async function uploadFile(file) {
-  const drive = getDriveClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const driveService = getDriveServiceClient();
+  const folderId = serviceAccountConfig.driveFolderId;
 
   try {
     const fileMetadata = {
@@ -67,7 +67,7 @@ export async function uploadFile(file) {
       body: Readable.from(file.buffer)
     };
 
-    const response = await drive.files.create({
+    const response = await driveService.files.create({
       requestBody: fileMetadata,
       media: media,
       fields: 'id, name, webViewLink'

@@ -2,11 +2,11 @@ import { OAuth2Client } from 'google-auth-library';
 import { oauthConfig } from '../config/oauth.js';
 import { AUTH_ERRORS } from '../constants/auth.js';
 
-const client = new OAuth2Client({
+const userAuthClient = new OAuth2Client({
   clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID
 });
 
-function extractToken(authHeader) {
+function extractUserToken(authHeader) {
   if (!authHeader) {
     throw new Error(AUTH_ERRORS.MISSING_TOKEN);
   }
@@ -24,34 +24,24 @@ function extractToken(authHeader) {
   return token;
 }
 
-export async function verifyGoogleToken(credential) {
+export async function verifyUserToken(credential) {
   try {
     if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
       throw new Error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
     }
 
     if (!credential || typeof credential !== 'string') {
-      if (!credential) {
-        throw new Error("no credentials")
-      }
-      if (typeof credential !== 'string') {
-        throw new Error("credentials are not a string")
-      }
       throw new Error(AUTH_ERRORS.INVALID_TOKEN);
     }
 
     try {
-      const ticket = await client.verifyIdToken({
+      const ticket = await userAuthClient.verifyIdToken({
         idToken: credential,
         audience: process.env.VITE_GOOGLE_WEB_CLIENT_ID
       });
 
       const payload = ticket.getPayload();
-      if (!payload) {
-        throw new Error(AUTH_ERRORS.INVALID_TOKEN);
-      }
-
-      if (!payload.email) {
+      if (!payload || !payload.email) {
         throw new Error(AUTH_ERRORS.INVALID_TOKEN);
       }
 
@@ -77,11 +67,11 @@ export async function verifyGoogleToken(credential) {
   }
 }
 
-export function authMiddleware(req, res, next) {
+export function userAuthMiddleware(req, res, next) {
   try {
     let token;
     try {
-      token = extractToken(req.headers.authorization);
+      token = extractUserToken(req.headers.authorization);
     } catch (extractError) {
       return res.status(401).json({
         status: 'error',
@@ -89,7 +79,7 @@ export function authMiddleware(req, res, next) {
       });
     }
 
-    verifyGoogleToken(token)
+    verifyUserToken(token)
       .then(user => {
         req.user = {
           email: user.email,

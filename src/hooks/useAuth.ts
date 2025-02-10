@@ -1,36 +1,35 @@
 import { useState, useCallback } from 'react';
-import type { AuthResponse } from '../types/auth';
-import { verifyToken, logout as apiLogout } from '../services/api/auth';
-import { isAllowedEmail } from '../utils/auth';
+import type { CredentialResponse } from '@react-oauth/google';
+import type { TokenPayload } from 'google-auth-library';
+import { verifyUserCredential, logout as apiLogout } from '../services/api/auth';
+import { TOKEN_STORAGE_KEYS, AUTH_ERRORS } from '../constants/auth';
+import { handleApiError } from '../utils/error';
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const login = useCallback(async (credentialResponse: any) => {
+  const login = useCallback(async (response: CredentialResponse) => {
     try {
-      if (!credentialResponse?.credential) {
-        throw new Error('Invalid credential response');
+      if (!response?.credential) {
+        throw new Error(AUTH_ERRORS.INVALID_TOKEN);
       }
 
-      const response = await verifyToken(credentialResponse.credential);
+      const authResponse = await verifyUserCredential(response.credential);
       
-      if (response.status === 'success' && response.email) {
-        if (isAllowedEmail(response.email)) {
-          setIsAuthenticated(true);
-          setUserEmail(response.email);
-          setError(null);
-          return true;
-        } else {
-          setError('Unauthorized email address');
-        }
+      if (authResponse.status === 'success' && authResponse.email) {
+        setIsAuthenticated(true);
+        setUserEmail(authResponse.email);
+        setError(null);
+        localStorage.setItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN, response.credential);
+        return true;
       } else {
-        setError(response.message || 'Failed to verify token');
+        setError(authResponse.message || AUTH_ERRORS.UNAUTHORIZED);
       }
     } catch (err) {
       console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'Authentication failed');
+      setError(handleApiError(err).message);
     }
     return false;
   }, []);
@@ -41,8 +40,10 @@ export function useAuth() {
       setIsAuthenticated(false);
       setUserEmail(null);
       setError(null);
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
     } catch (err) {
       console.error('Logout error:', err);
+      setError(handleApiError(err).message);
     }
   }, []);
 
@@ -63,10 +64,12 @@ export function useAuth() {
       
       setIsAuthenticated(false);
       setUserEmail(null);
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
     } catch (err) {
       console.error('Auth check error:', err);
       setIsAuthenticated(false);
       setUserEmail(null);
+      localStorage.removeItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
     }
     return false;
   }, []);

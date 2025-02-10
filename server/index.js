@@ -6,14 +6,14 @@ import { dirname, join } from 'path';
 import authRouter from './routes/auth.js';
 import driveRouter from './routes/drive.js';
 import processRouter from './routes/process.js';
-import { validateEnvironment } from './config/environment.js';
+import { validateAllConfigs } from './config/index.js';
 import { sessionMiddleware } from './middleware/session.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Validate environment variables
-validateEnvironment();
+// Validate all configurations
+validateAllConfigs();
 
 const app = express();
 const port = process.env.PORT || 3000;
