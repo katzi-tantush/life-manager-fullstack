@@ -41,7 +41,7 @@ export async function verifyGoogleToken(token) {
   } catch (error) {
     console.error('Token verification error:', {
       error,
-      token: token ? `${token.substring(0, 10)}...` : 'null',
+      tokenPresent: !!token,
       clientId: process.env.GOOGLE_WEB_CLIENT_ID ? 'present' : 'missing'
     });
     throw error;
@@ -76,7 +76,7 @@ export function authMiddleware(req, res, next) {
       console.error('Auth middleware error:', {
         error: error.message,
         stack: error.stack,
-        headers: req.headers
+        headerPresent: !!req.headers.authorization
       });
       
       res.status(401).json({
