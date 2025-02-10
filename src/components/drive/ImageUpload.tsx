@@ -46,22 +46,26 @@ export function ImageUpload() {
       <Card>
         <CardHeader>
           <h2 className="text-lg font-semibold text-gray-900">Process Image</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Upload an image to extract text. Supports JPEG, PNG, WebP, and HEIC formats.
+          </p>
         </CardHeader>
         <CardBody>
           <div className="flex flex-col space-y-4">
             <div className="flex items-center justify-center w-full">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <label className="relative flex flex-col items-center justify-center w-full h-32 sm:h-48 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                <div className="flex flex-col items-center justify-center p-4 text-center">
                   {processing ? (
                     <Loader2 className="w-8 h-8 text-gray-500 animate-spin" />
                   ) : (
                     <>
                       <Upload className="w-8 h-8 mb-3 text-gray-500" />
                       <p className="mb-2 text-sm text-gray-500">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
+                        <span className="font-semibold">Click to upload</span>
+                        <span className="hidden sm:inline"> or drag and drop</span>
                       </p>
                       <p className="text-xs text-gray-500">
-                        Supported formats: JPG, PNG, WebP
+                        JPEG, PNG, WebP, HEIC
                       </p>
                     </>
                   )}
@@ -70,20 +74,22 @@ export function ImageUpload() {
                   type="file"
                   className="hidden"
                   onChange={handleFileChange}
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                   disabled={processing}
                 />
               </label>
             </div>
 
             {result && (
-              <div className="mt-4">
+              <div className="mt-4 sm:mt-6">
                 <h3 className="text-md font-medium text-gray-900 mb-2 flex items-center">
                   <FileText className="w-5 h-5 mr-2" />
                   Extracted Text
                 </h3>
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="whitespace-pre-wrap">{result.extractedText}</p>
+                <div className="bg-gray-50 rounded-lg p-4 sm:p-6 max-h-[300px] overflow-y-auto">
+                  <p className="whitespace-pre-wrap text-sm sm:text-base">
+                    {result.extractedText}
+                  </p>
                 </div>
               </div>
             )}

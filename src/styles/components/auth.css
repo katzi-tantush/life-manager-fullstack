@@ -1,0 +1,54 @@
+/* Login Form */
+.login-container {
+    min-height: 100vh;
+    background-color: var(--color-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .login-card {
+    max-width: var(--breakpoint-md);
+    width: 100%;
+    margin: var(--space-4);
+    background-color: var(--color-surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-8);
+  }
+  
+  .login-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+    text-align: center;
+    margin-bottom: var(--space-6);
+  }
+  
+  .login-description {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    text-align: center;
+    margin-bottom: var(--space-4);
+  }
+  
+  /* User Profile */
+  .user-profile {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
+  
+  .user-email {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  .logout-button {
+    color: var(--color-text-secondary);
+    transition: color 0.2s;
+  }
+  
+  .logout-button:hover {
+    color: var(--color-text);
+  }

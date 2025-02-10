@@ -1,0 +1,54 @@
+@import './base/reset.css';
+@import './base/variables.css';
+@import './utils/breakpoints.css';
+@import './components/auth.css';
+@import './components/common.css';
+@import './components/drive.css';
+
+/* Base Styles */
+body {
+  background-color: var(--color-background);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* Container */
+.container {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
+}
+
+@media (--sm) {
+  .container {
+    max-width: 640px;
+  }
+}
+
+@media (--md) {
+  .container {
+    max-width: 768px;
+  }
+}
+
+@media (--lg) {
+  .container {
+    max-width: 1024px;
+  }
+}
+
+/* Touch Device Optimizations */
+@media (--touch) {
+  input,
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .touch-target {
+    padding: var(--space-4);
+  }
+}

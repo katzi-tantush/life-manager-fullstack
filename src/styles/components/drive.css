@@ -1,0 +1,97 @@
+/* File Upload */
+.upload-container {
+    margin-bottom: var(--space-8);
+  }
+  
+  .upload-zone {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 8rem;
+    border: 2px dashed #E5E7EB;
+    border-radius: var(--radius-lg);
+    background-color: #F9FAFB;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  @media (--sm) {
+    .upload-zone {
+      min-height: 12rem;
+    }
+  }
+  
+  .upload-zone:hover {
+    background-color: #F3F4F6;
+  }
+  
+  .upload-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-4);
+    text-align: center;
+  }
+  
+  .upload-icon {
+    width: 2rem;
+    height: 2rem;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-3);
+  }
+  
+  .upload-text {
+    margin-bottom: var(--space-2);
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+  }
+  
+  .upload-formats {
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+  }
+  
+  /* Folder List */
+  .folder-list {
+    background-color: #F9FAFB;
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+  }
+  
+  .folder-empty {
+    text-align: center;
+    padding: var(--space-4);
+    color: var(--color-text-secondary);
+  }
+  
+  .folder-items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  
+  .folder-item {
+    display: flex;
+    align-items: center;
+    padding: var(--space-3);
+    border-bottom: 1px solid #E5E7EB;
+  }
+  
+  .folder-item:last-child {
+    border-bottom: none;
+  }
+  
+  .folder-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--color-text-secondary);
+    margin-right: var(--space-3);
+  }
+  
+  .folder-name {
+    color: var(--color-text);
+  }

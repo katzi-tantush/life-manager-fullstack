@@ -8,11 +8,12 @@ interface UserProfileProps {
 
 export function UserProfile({ email, onLogout }: UserProfileProps) {
   return (
-    <div className="flex items-center gap-4">
-      <span className="text-sm text-gray-600">{email}</span>
+    <div className="user-profile">
+      <span className="user-email">{email}</span>
       <button
         onClick={onLogout}
-        className="inline-flex items-center text-gray-600 hover:text-gray-900"
+        className="logout-button"
+        aria-label="Logout"
       >
         <LogOut className="h-5 w-5" />
       </button>

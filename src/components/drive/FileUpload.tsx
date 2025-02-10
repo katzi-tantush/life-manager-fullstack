@@ -20,20 +20,21 @@ export function FileUpload({ onUpload, uploading, uploadedFile, error }: FileUpl
   };
 
   return (
-    <div className="mb-8">
+    <div className="upload-container">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload File</h2>
       <div className="flex items-center justify-center w-full">
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+        <label className="upload-zone">
+          <div className="upload-content">
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-gray-500 animate-spin" />
+              <Loader2 className="spinner spinner-md" />
             ) : (
               <>
-                <Upload className="w-8 h-8 mb-3 text-gray-500" />
-                <p className="mb-2 text-sm text-gray-500">
-                  <span className="font-semibold">Click to upload</span> or drag and drop
+                <Upload className="upload-icon" />
+                <p className="upload-text">
+                  <span className="font-semibold">Click to upload</span>
+                  <span className="hidden sm:inline"> or drag and drop</span>
                 </p>
-                <p className="text-xs text-gray-500">Any file type</p>
+                <p className="upload-formats">Any file type</p>
               </>
             )}
           </div>
@@ -49,9 +50,7 @@ export function FileUpload({ onUpload, uploading, uploadedFile, error }: FileUpl
       {uploadedFile && (
         <div className="mt-4 p-4 bg-green-50 rounded-lg">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <span className="text-green-700 font-medium">{uploadedFile.name}</span>
-            </div>
+            <span className="text-green-700 font-medium">{uploadedFile.name}</span>
             <a
               href={uploadedFile.webViewLink}
               target="_blank"
