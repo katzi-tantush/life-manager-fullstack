@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
-import { serviceAccountConfig } from '../config/service-account.js';
+import { serviceAccountConfig, getDriveFolderIds } from '../config/service-account.js';
 
 let driveServiceClient = null;
 
@@ -29,46 +29,18 @@ export function getDriveServiceClient() {
   return driveServiceClient;
 }
 
-export async function listFolders() {
-  const drive = getDriveServiceClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-  
-  if (!folderId) {
-    throw new Error('Missing Google Drive folder ID');
-  }
-
-  try {
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder'`,
-      fields: 'files(id, name)',
-      orderBy: 'name'
-    });
-
-    return {
-      status: 'success',
-      folders: response.data.files
-    };
-  } catch (error) {
-    console.error('Drive API error:', error);
-    return {
-      status: 'error',
-      message: 'Failed to fetch folders: ' + (error instanceof Error ? error.message : 'Unknown error')
-    };
-  }
-}
-
 export async function uploadFile(file) {
   const drive = getDriveServiceClient();
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const { uploadsFolderId } = getDriveFolderIds();
 
-  if (!folderId) {
-    throw new Error('Missing Google Drive folder ID');
+  if (!uploadsFolderId) {
+    throw new Error('Missing uploads folder ID');
   }
 
   try {
     const fileMetadata = {
       name: file.originalname,
-      parents: [folderId]
+      parents: [uploadsFolderId]
     };
 
     const media = {
