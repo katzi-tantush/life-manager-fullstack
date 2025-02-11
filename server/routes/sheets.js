@@ -14,6 +14,14 @@ router.post('/create', userAuthMiddleware, async (req, res) => {
       });
     }
 
+    // Ensure user is authenticated and has valid session
+    if (!req.session || !req.session.email) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Authentication required'
+      });
+    }
+
     const result = await createSheet(title);
     res.json(result);
   } catch (error) {
@@ -30,6 +38,14 @@ router.get('/:spreadsheetId/read', userAuthMiddleware, async (req, res) => {
     const { spreadsheetId } = req.params;
     const { range } = req.query;
 
+    // Ensure user is authenticated and has valid session
+    if (!req.session || !req.session.email) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Authentication required'
+      });
+    }
+
     const result = await readSheetData(spreadsheetId, range);
     res.json(result);
   } catch (error) {
@@ -45,6 +61,14 @@ router.post('/:spreadsheetId/write', userAuthMiddleware, async (req, res) => {
   try {
     const { spreadsheetId } = req.params;
     const { data, schema } = req.body;
+
+    // Ensure user is authenticated and has valid session
+    if (!req.session || !req.session.email) {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Authentication required'
+      });
+    }
 
     if (!data || !Array.isArray(data)) {
       return res.status(400).json({

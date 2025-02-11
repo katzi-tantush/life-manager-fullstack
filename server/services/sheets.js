@@ -48,6 +48,11 @@ export async function createSheet(title) {
   const { googleSheetsDbId } = getDriveFolderIds();
 
   try {
+    console.log('Creating new sheet:', {
+      title,
+      parentFolderId: googleSheetsDbId
+    });
+
     // Create a new sheet
     const response = await sheets.spreadsheets.create({
       requestBody: {
@@ -76,6 +81,18 @@ export async function createSheet(title) {
     });
 
     const spreadsheetId = response.data.spreadsheetId;
+    console.log('Sheet created successfully:', { spreadsheetId });
+
+    // Move the sheet to the correct folder if a folder ID is provided
+    if (googleSheetsDbId) {
+      const drive = google.drive({ version: 'v3', auth: sheets.context._options.auth });
+      await drive.files.update({
+        fileId: spreadsheetId,
+        addParents: googleSheetsDbId,
+        fields: 'id, parents'
+      });
+      console.log('Sheet moved to folder:', { folderId: googleSheetsDbId });
+    }
 
     // Initialize metadata
     const metadata = {
@@ -112,6 +129,8 @@ export async function readSheetData(spreadsheetId, range = 'Data!A1:Z1000') {
   const sheets = getSheetsClient();
 
   try {
+    console.log('Reading sheet data:', { spreadsheetId, range });
+
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range
@@ -145,6 +164,12 @@ export async function writeSheetData(spreadsheetId, data, schema) {
   const sheets = getSheetsClient();
 
   try {
+    console.log('Writing sheet data:', {
+      spreadsheetId,
+      rowCount: data.length,
+      schemaFields: schema.fields.length
+    });
+
     // Validate schema
     const validationResult = MetadataSchema.safeParse(schema);
     if (!validationResult.success) {
@@ -171,8 +196,12 @@ export async function writeSheetData(spreadsheetId, data, schema) {
     });
 
     // Write headers if sheet is empty
-    const currentData = await readSheetData(spreadsheetId);
-    if (!currentData.headers || currentData.headers.length === 0) {
+    const currentData = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: 'Data!A1:1'
+    });
+
+    if (!currentData.data.values || currentData.data.values.length === 0) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range: 'Data!A1',
