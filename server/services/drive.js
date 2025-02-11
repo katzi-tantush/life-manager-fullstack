@@ -1,6 +1,6 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
-import { serviceAccountConfig, getDriveFolderIds } from '../config/service-account.js';
+import { getDriveFolderIds } from '../config/service-account.js';
 
 let driveServiceClient = null;
 
@@ -34,7 +34,7 @@ export async function uploadFile(file) {
   const { uploadsFolderId } = getDriveFolderIds();
 
   if (!uploadsFolderId) {
-    throw new Error('Missing uploads folder ID');
+    throw new Error('Missing uploads folder ID in DRIVE_DATA_JSON configuration');
   }
 
   try {
