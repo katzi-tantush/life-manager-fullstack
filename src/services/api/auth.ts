@@ -1,5 +1,5 @@
 import type { AuthResponse } from '../../types/auth';
-import { AUTH_ENDPOINTS, TOKEN_STORAGE_KEYS } from '../../constants/auth';
+import { AUTH_ENDPOINTS, TOKEN_STORAGE_KEYS, AUTH_TYPES } from '../../constants/auth';
 import { handleApiError } from '../../utils/error';
 
 export async function verifyUserCredential(credential: string): Promise<AuthResponse> {
@@ -14,7 +14,10 @@ export async function verifyUserCredential(credential: string): Promise<AuthResp
         'Content-Type': 'application/json',
       },
       credentials: 'include',
-      body: JSON.stringify({ credential }),
+      body: JSON.stringify({ 
+        credential,
+        type: AUTH_TYPES.OAUTH 
+      }),
     });
 
     if (!response.ok) {
