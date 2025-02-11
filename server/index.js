@@ -3,9 +3,9 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import authRouter from './routes/auth.js';
 import driveRouter from './routes/drive.js';
 import processRouter from './routes/process.js';
+import sheetsRouter from './routes/sheets.js';
 import { validateAllConfigs } from './config/index.js';
 import { sessionMiddleware } from './middleware/session.js';
 
@@ -29,12 +29,10 @@ app.use(cors({
 app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
 
-// Public routes
-app.use('/api/auth', authRouter);
-
-// Protected routes
+// API Routes
 app.use('/api/drive', sessionMiddleware, driveRouter);
 app.use('/api/process', sessionMiddleware, processRouter);
+app.use('/api/sheets', sessionMiddleware, sheetsRouter);
 
 // Serve index.html for all other routes (client-side routing)
 app.get('*', (req, res) => {

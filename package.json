@@ -36,7 +36,9 @@
     "redis": "^4.6.13",
     "cookie-parser": "^1.4.6",
     "uuid": "^9.0.1",
-    "google-auth-library": "^9.6.3"
+    "date-fns": "^3.3.1",
+    "lodash": "^4.17.21",
+    "ajv": "^8.12.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
@@ -49,8 +51,7 @@
     "@types/express-session": "^1.17.10",
     "@types/cookie-parser": "^1.4.7",
     "@types/uuid": "^9.0.8",
-    "@types/google-one-tap": "^1.2.6",
-    "@types/google.accounts": "^0.0.14",
+    "@types/lodash": "^4.14.202",
     "eslint": "^9.9.1",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.11",

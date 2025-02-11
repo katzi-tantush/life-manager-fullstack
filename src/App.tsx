@@ -5,7 +5,7 @@ import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
 import { LoginForm } from './components/auth/LoginForm';
 import { FileUpload } from './components/drive/FileUpload';
 import { ImageUpload } from './components/drive/ImageUpload';
-import { ErrorAlert } from './components/common/ErrorAlert';
+import { SheetsTest } from './components/sheets/SheetsTest';
 import { useAuthContext } from './context/AuthContext';
 import { useDriveContext } from './context/DriveContext';
 import { DriveProvider } from './context/DriveContext';
@@ -28,6 +28,8 @@ function DriveManager() {
         />
 
         <ImageUpload />
+
+        <SheetsTest />
       </div>
     </AuthenticatedLayout>
   );
