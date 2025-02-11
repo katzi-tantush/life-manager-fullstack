@@ -1,26 +1,16 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { userAuthMiddleware } from '../middleware/auth.js';
-import { listFolders, uploadFile } from '../services/drive.js';
+import { uploadFile } from '../services/drive.js';
 
-const upload = multer({ storage: multer.memoryStorage() });
-const router = Router();
-
-router.get('/folders', userAuthMiddleware, async (req, res) => {
-  try {
-    const folders = await listFolders();
-    res.json({
-      status: 'success',
-      folders
-    });
-  } catch (error) {
-    console.error('Drive API error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to fetch folders: ' + error.message
-    });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
   }
 });
+
+const router = Router();
 
 router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
@@ -31,16 +21,18 @@ router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, re
       });
     }
 
-    const file = await uploadFile(req.file);
-    res.json({
-      status: 'success',
-      file
-    });
+    const result = await uploadFile(req.file);
+    
+    if (result.status === 'error') {
+      return res.status(500).json(result);
+    }
+    
+    res.json(result);
   } catch (error) {
     console.error('Drive API error:', error);
     res.status(500).json({
       status: 'error',
-      message: 'Failed to upload file: ' + error.message
+      message: error instanceof Error ? error.message : 'Failed to upload file'
     });
   }
 });

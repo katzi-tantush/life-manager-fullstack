@@ -34,10 +34,21 @@ export async function uploadFile(file) {
   const { uploadsFolderId } = getDriveFolderIds();
 
   if (!uploadsFolderId) {
-    throw new Error('Missing uploads folder ID in DRIVE_DATA_JSON configuration');
+    console.error('Upload failed: Missing uploads folder ID');
+    return {
+      status: 'error',
+      message: 'Drive configuration error: Missing uploads folder ID'
+    };
   }
 
   try {
+    console.log('Uploading file to Drive...', {
+      filename: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      folderId: uploadsFolderId
+    });
+
     const fileMetadata = {
       name: file.originalname,
       parents: [uploadsFolderId]
@@ -54,12 +65,44 @@ export async function uploadFile(file) {
       fields: 'id, name, webViewLink'
     });
 
+    console.log('File uploaded successfully:', {
+      fileId: response.data.id,
+      filename: response.data.name
+    });
+
     return {
       status: 'success',
       file: response.data
     };
   } catch (error) {
-    console.error('Drive API error:', error);
+    console.error('Drive API error:', {
+      error: error.message,
+      stack: error.stack,
+      filename: file.originalname,
+      folderId: uploadsFolderId
+    });
+
+    // Check for specific Drive API errors
+    const errorMessage = error.message.toLowerCase();
+    if (errorMessage.includes('insufficient permissions')) {
+      return {
+        status: 'error',
+        message: 'Service account does not have permission to upload to this folder'
+      };
+    }
+    if (errorMessage.includes('quota')) {
+      return {
+        status: 'error',
+        message: 'Drive storage quota exceeded'
+      };
+    }
+    if (errorMessage.includes('rate limit')) {
+      return {
+        status: 'error',
+        message: 'Drive API rate limit exceeded. Please try again later'
+      };
+    }
+
     return {
       status: 'error',
       message: 'Failed to upload file: ' + (error instanceof Error ? error.message : 'Unknown error')
