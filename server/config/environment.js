@@ -23,7 +23,7 @@ export function validateEnvironment() {
     'VITE_GOOGLE_WEB_CLIENT_ID',
     'GOOGLE_SERVICE_ACCOUNT_EMAIL',
     'GOOGLE_SERVICE_ACCOUNT_KEY',
-    'GOOGLE_DRIVE_FOLDER_ID'
+    'DRIVE_DATA_JSON'
   ];
 
   const missingVars = requiredVars.filter(varName => !process.env[varName]);
