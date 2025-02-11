@@ -1,16 +1,12 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useDrive } from '../hooks/useDrive';
-import type { DriveFolder, DriveFile } from '../types/drive';
+import type { DriveFile } from '../types/drive';
 
 interface DriveContextType {
-  folders: DriveFolder[];
-  loading: boolean;
-  error: string | null;
   uploading: boolean;
   uploadedFile: DriveFile | null;
   uploadError: string | null;
   handleUpload: (file: File) => Promise<boolean>;
-  refreshFolders: () => Promise<void>;
 }
 
 const DriveContext = createContext<DriveContextType | null>(null);
@@ -18,15 +14,12 @@ const DriveContext = createContext<DriveContextType | null>(null);
 export function DriveProvider({ children }: { children: React.ReactNode }) {
   const drive = useDrive();
 
-  useEffect(() => {
-    drive.fetchFolders();
-  }, [drive]);
-
   return (
     <DriveContext.Provider value={{
-      ...drive,
+      uploading: drive.uploading,
+      uploadedFile: drive.uploadedFile,
       uploadError: drive.uploadError,
-      refreshFolders: drive.fetchFolders
+      handleUpload: drive.handleUpload
     }}>
       {children}
     </DriveContext.Provider>

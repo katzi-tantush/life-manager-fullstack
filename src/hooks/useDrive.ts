@@ -1,33 +1,13 @@
 import { useState, useCallback } from 'react';
-import type { DriveFolder, DriveFile } from '../types/drive';
-import { listFolders, uploadFile } from '../services/api/drive';
+import type { DriveFile } from '../types/drive';
+import { uploadFile } from '../services/api/drive';
 import { validateFileSize, validateFileName } from '../utils/validation';
 import { formatError } from '../utils/error';
 
 export function useDrive() {
-  const [folders, setFolders] = useState<DriveFolder[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<DriveFile | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
-
-  const fetchFolders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const result = await listFolders();
-      if (result.status === 'success' && result.folders) {
-        setFolders(result.folders);
-      } else {
-        setError(result.message || 'Failed to fetch folders');
-      }
-    } catch (err) {
-      setError(formatError(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleUpload = useCallback(async (file: File) => {
     if (!validateFileSize(file)) {
@@ -61,13 +41,9 @@ export function useDrive() {
   }, []);
 
   return {
-    folders,
-    loading,
-    error,
     uploading,
     uploadedFile,
     uploadError,
-    fetchFolders,
     handleUpload,
   };
 }
