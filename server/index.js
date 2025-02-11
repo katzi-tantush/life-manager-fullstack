@@ -6,6 +6,7 @@ import { dirname, join } from 'path';
 import driveRouter from './routes/drive.js';
 import processRouter from './routes/process.js';
 import sheetsRouter from './routes/sheets.js';
+import authRouter from './routes/auth.js';
 import { validateAllConfigs } from './config/index.js';
 import { sessionMiddleware } from './middleware/session.js';
 
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
 
 // API Routes
+app.use('/api/auth', authRouter); // Add auth routes BEFORE protected routes
 app.use('/api/drive', sessionMiddleware, driveRouter);
 app.use('/api/process', sessionMiddleware, processRouter);
 app.use('/api/sheets', sessionMiddleware, sheetsRouter);

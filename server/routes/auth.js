@@ -1,28 +1,32 @@
 import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { oauthConfig } from '../config/oauth.js';
-import { createSession, deleteSession, refreshSession } from '../services/session.js';
+import { createSession, deleteSession } from '../services/session.js';
 import { AUTH_ERRORS } from '../constants/auth.js';
+import { AUTH_TYPES } from '../constants/auth.js';
 
 const router = Router();
-const userAuthClient = new OAuth2Client(process.env.VITE_GOOGLE_WEB_CLIENT_ID);
+const userAuthClient = new OAuth2Client({
+  clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID
+});
 
+// User Authentication Routes
 router.post('/verify', async (req, res) => {
   try {
-    const { credential } = req.body;
+    const { credential, type } = req.body;
     
+    // Ensure we're handling user authentication
+    if (type !== AUTH_TYPES.OAUTH) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Invalid authentication type'
+      });
+    }
+
     if (!credential || typeof credential !== 'string') {
       return res.status(400).json({
         status: 'error',
         message: AUTH_ERRORS.INVALID_TOKEN
-      });
-    }
-
-    if (!process.env.VITE_GOOGLE_WEB_CLIENT_ID) {
-      console.error('Missing VITE_GOOGLE_WEB_CLIENT_ID environment variable');
-      return res.status(500).json({
-        status: 'error',
-        message: AUTH_ERRORS.SERVER_ERROR
       });
     }
 
@@ -47,14 +51,17 @@ router.post('/verify', async (req, res) => {
         });
       }
 
-      const sessionId = await createSession(payload);
+      const sessionId = await createSession({
+        ...payload,
+        authType: AUTH_TYPES.OAUTH
+      });
 
       res.cookie('sessionId', sessionId, oauthConfig.sessionCookie);
 
       res.json({
         status: 'success',
         email: payload.email,
-        token: credential  // Include the token in the response
+        authType: AUTH_TYPES.OAUTH
       });
     } catch (verifyError) {
       console.error('Token verification error:', {
@@ -76,44 +83,6 @@ router.post('/verify', async (req, res) => {
     }
   } catch (error) {
     console.error('Auth error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: AUTH_ERRORS.SERVER_ERROR
-    });
-  }
-});
-
-router.post('/refresh', async (req, res) => {
-  try {
-    const currentSessionId = req.cookies.sessionId;
-    if (!currentSessionId) {
-      return res.status(401).json({
-        status: 'error',
-        message: AUTH_ERRORS.MISSING_TOKEN
-      });
-    }
-
-    const newSessionId = await refreshSession(currentSessionId);
-    if (!newSessionId) {
-      return res.status(401).json({
-        status: 'error',
-        message: AUTH_ERRORS.INVALID_TOKEN
-      });
-    }
-
-    // Set new session cookie
-    res.cookie('sessionId', newSessionId, oauthConfig.sessionCookie);
-
-    // Generate new token
-    const session = await getSession(newSessionId);
-    const token = await userAuthClient.getToken(); // Get fresh token
-
-    res.json({
-      status: 'success',
-      token: token.tokens.id_token // Include the new token in the response
-    });
-  } catch (error) {
-    console.error('Session refresh error:', error);
     res.status(500).json({
       status: 'error',
       message: AUTH_ERRORS.SERVER_ERROR

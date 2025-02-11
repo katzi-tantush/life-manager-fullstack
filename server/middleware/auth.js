@@ -1,6 +1,6 @@
 import { OAuth2Client } from 'google-auth-library';
 import { oauthConfig } from '../config/oauth.js';
-import { AUTH_ERRORS } from '../constants/auth.js';
+import { AUTH_ERRORS, AUTH_TYPES } from '../constants/auth.js';
 
 const userAuthClient = new OAuth2Client({
   clientId: process.env.VITE_GOOGLE_WEB_CLIENT_ID
@@ -49,7 +49,10 @@ export async function verifyUserToken(credential) {
         throw new Error(AUTH_ERRORS.UNAUTHORIZED);
       }
 
-      return payload;
+      return {
+        ...payload,
+        authType: AUTH_TYPES.OAUTH
+      };
     } catch (verifyError) {
       console.error('Token verification error:', {
         error: verifyError.message,
@@ -85,7 +88,8 @@ export function userAuthMiddleware(req, res, next) {
           email: user.email,
           name: user.name,
           picture: user.picture,
-          sub: user.sub
+          sub: user.sub,
+          authType: user.authType
         };
         next();
       })
