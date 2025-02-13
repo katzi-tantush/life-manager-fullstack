@@ -31,7 +31,7 @@ app.use(express.json());
 app.use(express.static(join(__dirname, '../dist')));
 
 // API Routes
-app.use('/api/auth', authRouter); // Add auth routes BEFORE protected routes
+app.use('/api/auth', authRouter);
 app.use('/api/drive', sessionMiddleware, driveRouter);
 app.use('/api/process', sessionMiddleware, processRouter);
 app.use('/api/sheets', sessionMiddleware, sheetsRouter);

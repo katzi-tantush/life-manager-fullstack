@@ -24,7 +24,7 @@ router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, re
     }
 
     const { uploadsFolderId } = getGoogleServiceConfig();
-    const result = await driveService.uploadFileToDrive(req.file, uploadsFolderId);
+    const result = await driveService.uploadFile(req.file, uploadsFolderId);
     
     if (result.status === 'error') {
       return res.status(500).json(result);
@@ -40,4 +40,4 @@ router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, re
   }
 });
 
-export default driveService
+export default router;
