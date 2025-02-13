@@ -1,8 +1,10 @@
 import { getGoogleApiService } from './base.js';
+import { getDriveService } from './drive.js';
 
 export class SheetsService {
   constructor() {
     this.service = getGoogleApiService();
+    this.driveService = getDriveService();
     this.scopes = [
       'https://www.googleapis.com/auth/spreadsheets',
       'https://www.googleapis.com/auth/drive.file'
@@ -17,43 +19,44 @@ export class SheetsService {
     try {
       const sheets = await this.getClient();
       
-      const requestBody = {
-        properties: { title },
-        sheets: [
-          {
-            properties: {
-              title: 'Data',
-              gridProperties: {
-                rowCount: 1000,
-                columnCount: 26
-              }
-            }
-          },
-          {
-            properties: {
-              title: 'Metadata',
-              gridProperties: {
-                rowCount: 100,
-                columnCount: 10
-              }
-            }
-          }
-        ]
-      };
-
-      // If folderId is provided, add it to the parents array
-      if (folderId) {
-        requestBody.parents = [folderId];
-      }
-
+      // First create the spreadsheet without folder specification
       const response = await sheets.spreadsheets.create({
-        requestBody,
+        requestBody: {
+          properties: { title },
+          sheets: [
+            {
+              properties: {
+                title: 'Data',
+                gridProperties: {
+                  rowCount: 1000,
+                  columnCount: 26
+                }
+              }
+            },
+            {
+              properties: {
+                title: 'Metadata',
+                gridProperties: {
+                  rowCount: 100,
+                  columnCount: 10
+                }
+              }
+            }
+          ]
+        },
         fields: 'spreadsheetId,sheets,properties'
       });
 
+      const spreadsheetId = response.data.spreadsheetId;
+
+      // If a folder ID is provided, move the spreadsheet to that folder
+      if (folderId) {
+        await this.driveService.moveFile(spreadsheetId, folderId);
+      }
+
       return {
         status: 'success',
-        spreadsheetId: response.data.spreadsheetId,
+        spreadsheetId: spreadsheetId,
         sheets: response.data.sheets
       };
     } catch (error) {
