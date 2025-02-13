@@ -1,3 +1,4 @@
+import { Readable } from 'stream';
 import { getGoogleApiService } from './base.js';
 
 export class DriveService {
@@ -19,15 +20,32 @@ export class DriveService {
         parents: folderId ? [folderId] : undefined
       };
 
+      // Create a readable stream from the buffer
+      const stream = new Readable();
+      stream.push(file.buffer);
+      stream.push(null);
+
       const media = {
         mimeType: file.mimetype,
-        body: file.buffer
+        body: stream
       };
+
+      console.log('Uploading file:', {
+        name: file.originalname,
+        size: file.size,
+        mimeType: file.mimetype,
+        folderId
+      });
 
       const response = await drive.files.create({
         requestBody: fileMetadata,
         media: media,
         fields: 'id, name, webViewLink'
+      });
+
+      console.log('File uploaded successfully:', {
+        id: response.data.id,
+        name: response.data.name
       });
 
       return {

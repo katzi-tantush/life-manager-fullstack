@@ -17,41 +17,43 @@ export class SheetsService {
     try {
       const sheets = await this.getClient();
       
-      const response = await sheets.spreadsheets.create({
-        requestBody: {
-          properties: { title },
-          sheets: [
-            {
-              properties: {
-                title: 'Data',
-                gridProperties: {
-                  rowCount: 1000,
-                  columnCount: 26
-                }
-              }
-            },
-            {
-              properties: {
-                title: 'Metadata',
-                gridProperties: {
-                  rowCount: 100,
-                  columnCount: 10
-                }
+      const requestBody = {
+        properties: { title },
+        sheets: [
+          {
+            properties: {
+              title: 'Data',
+              gridProperties: {
+                rowCount: 1000,
+                columnCount: 26
               }
             }
-          ]
-        }
-      });
+          },
+          {
+            properties: {
+              title: 'Metadata',
+              gridProperties: {
+                rowCount: 100,
+                columnCount: 10
+              }
+            }
+          }
+        ]
+      };
 
-      const spreadsheetId = response.data.spreadsheetId;
-
+      // If folderId is provided, add it to the parents array
       if (folderId) {
-        await this.moveToFolder(spreadsheetId, folderId);
+        requestBody.parents = [folderId];
       }
+
+      const response = await sheets.spreadsheets.create({
+        requestBody,
+        fields: 'spreadsheetId,sheets,properties'
+      });
 
       return {
         status: 'success',
-        spreadsheetId,
+        spreadsheetId: response.data.spreadsheetId,
         sheets: response.data.sheets
       };
     } catch (error) {
@@ -61,11 +63,6 @@ export class SheetsService {
         message: this.formatError(error)
       };
     }
-  }
-
-  async moveToFolder(spreadsheetId, folderId) {
-    const driveService = getDriveService();
-    return driveService.moveFile(spreadsheetId, folderId);
   }
 
   async readSheet(spreadsheetId, range) {
