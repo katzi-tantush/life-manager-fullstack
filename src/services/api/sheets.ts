@@ -19,7 +19,8 @@ export async function createSheet(title: string) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to create sheet');
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create sheet');
     }
 
     return response.json();
@@ -38,14 +39,14 @@ export async function readSheetData(spreadsheetId: string, range?: string) {
     const response = await fetch(`/api/sheets/${spreadsheetId}/read${range ? `?range=${range}` : ''}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
       credentials: 'include',
     });
 
     if (!response.ok) {
-      throw new Error('Failed to read sheet data');
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to read sheet data');
     }
 
     return response.json();
@@ -54,7 +55,7 @@ export async function readSheetData(spreadsheetId: string, range?: string) {
   }
 }
 
-export async function writeSheetData(spreadsheetId: string, data: any[], schema: any) {
+export async function writeSheetData(spreadsheetId: string, range: string, values: any[][]) {
   try {
     const token = localStorage.getItem(TOKEN_STORAGE_KEYS.OAUTH_TOKEN);
     if (!token) {
@@ -68,11 +69,12 @@ export async function writeSheetData(spreadsheetId: string, data: any[], schema:
         'Authorization': `Bearer ${token}`
       },
       credentials: 'include',
-      body: JSON.stringify({ data, schema }),
+      body: JSON.stringify({ data: values, range }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to write sheet data');
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to write sheet data');
     }
 
     return response.json();

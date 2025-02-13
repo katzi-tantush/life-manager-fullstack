@@ -14,6 +14,11 @@ export function SheetsTest() {
       setError(null);
       const title = `Test Sheet ${new Date().toISOString()}`;
       const response = await createSheet(title);
+      
+      if (response.status === 'error') {
+        throw new Error(response.message);
+      }
+      
       setResult(response);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create sheet');
@@ -32,24 +37,22 @@ export function SheetsTest() {
       setLoading(true);
       setError(null);
 
-      const testSchema = {
-        entityName: 'TestEntity',
-        fields: [
-          { name: 'name', type: 'string', required: true },
-          { name: 'age', type: 'number' },
-          { name: 'isActive', type: 'boolean' },
-          { name: 'joinDate', type: 'date' }
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date()
-      };
-
       const testData = [
-        { name: 'John Doe', age: 30, isActive: true, joinDate: new Date() },
-        { name: 'Jane Smith', age: 25, isActive: false, joinDate: new Date() }
+        ['Name', 'Age', 'Active', 'Join Date'],
+        ['John Doe', 30, true, new Date().toISOString()],
+        ['Jane Smith', 25, false, new Date().toISOString()]
       ];
 
-      const response = await writeSheetData(result.spreadsheetId, testData, testSchema);
+      const response = await writeSheetData(
+        result.spreadsheetId,
+        'Data!A1:D3',
+        testData
+      );
+
+      if (response.status === 'error') {
+        throw new Error(response.message);
+      }
+
       setResult({ ...result, writeResult: response });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to write data');
@@ -67,7 +70,12 @@ export function SheetsTest() {
     try {
       setLoading(true);
       setError(null);
-      const response = await readSheetData(result.spreadsheetId);
+      const response = await readSheetData(result.spreadsheetId, 'Data!A1:D1000');
+      
+      if (response.status === 'error') {
+        throw new Error(response.message);
+      }
+
       setResult({ ...result, readResult: response });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to read data');
@@ -82,7 +90,7 @@ export function SheetsTest() {
         <h2 className="text-xl font-semibold mb-4">Google Sheets Test Area</h2>
         
         <div className="space-y-4">
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-4">
             <Button
               onClick={handleCreateSheet}
               disabled={loading}
@@ -95,6 +103,7 @@ export function SheetsTest() {
               onClick={handleTestWrite}
               disabled={loading || !result?.spreadsheetId}
               loading={loading}
+              variant="secondary"
             >
               Write Test Data
             </Button>
@@ -103,6 +112,7 @@ export function SheetsTest() {
               onClick={handleTestRead}
               disabled={loading || !result?.spreadsheetId}
               loading={loading}
+              variant="secondary"
             >
               Read Sheet Data
             </Button>
@@ -116,7 +126,7 @@ export function SheetsTest() {
 
           {result && (
             <div className="bg-gray-50 p-4 rounded-md">
-              <pre className="whitespace-pre-wrap text-sm">
+              <pre className="whitespace-pre-wrap text-sm overflow-auto max-h-96">
                 {JSON.stringify(result, null, 2)}
               </pre>
             </div>
