@@ -7,4 +7,4 @@ export function validateAllConfigs() {
 }
 
 export { oauthConfig } from './oauth.js';
-export { serviceAccountConfig, getDriveFolderIds } from './service-account.js';
+export { serviceAccountConfig, getDriveConfig } from './service-account.js';

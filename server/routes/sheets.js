@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { userAuthMiddleware } from '../middleware/auth.js';
 import { getSheetsService } from '../services/google/index.js';
-import { getDriveFolderIds } from '../config/service-account.js';
+import { getDriveConfig } from '../config/service-account.js';
 
 const router = Router();
 const sheetsService = getSheetsService();
@@ -24,7 +24,7 @@ router.post('/create', userAuthMiddleware, async (req, res) => {
       });
     }
 
-    const { googleSheetsDbId } = getDriveFolderIds();
+    const { googleSheetsDbId } = getDriveConfig();
     const result = await sheetsService.createSheet(title, googleSheetsDbId);
     res.json(result);
   } catch (error) {

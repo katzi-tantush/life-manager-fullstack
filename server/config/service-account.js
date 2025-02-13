@@ -17,12 +17,13 @@ function parseDriveConfig() {
   }
 }
 
-export function getDriveFolderIds() {
+export function getDriveConfig() {
   const driveConfig = parseDriveConfig();
   return {
     mainFolderId: driveConfig.mainFolderId,
     uploadsFolderId: driveConfig.uploadsFolderId,
-    googleSheetsDbId: driveConfig.googleSheetsDbId
+    googleSheetsDbId: driveConfig.googleSheetsDbId,
+    googleSheetsDbIdTest: driveConfig.googleSheetsDbIdTest
   };
 }
 
@@ -41,8 +42,8 @@ export function validateServiceAccountConfig() {
 
   // Validate JSON structure
   try {
-    const { mainFolderId, uploadsFolderId, googleSheetsDbId } = getDriveFolderIds();
-    if (!mainFolderId || !uploadsFolderId || !googleSheetsDbId) {
+    const { mainFolderId, uploadsFolderId, googleSheetsDbId, googleSheetsDbIdTest } = getDriveConfig();
+    if (!mainFolderId || !uploadsFolderId || (!googleSheetsDbId && !googleSheetsDbIdTest)) {
       throw new Error('Missing required folder IDs in DRIVE_DATA_JSON');
     }
   } catch (error) {

@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { getDriveFolderIds } from '../config/service-account.js';
+import { getDriveConfig } from '../config/service-account.js';
 
 let sheetsClient = null;
 
@@ -49,7 +49,7 @@ function getSheetsClient() {
 
 export async function createSheet(title) {
   const sheets = getSheetsClient();
-  const { googleSheetsDbId } = getDriveFolderIds();
+  const { googleSheetsDbId } = getDriveConfig();
 
   try {
     console.log('Creating new sheet:', {
