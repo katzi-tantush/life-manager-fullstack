@@ -28,9 +28,13 @@ function initializeSheetsClient() {
     private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n')
   };
 
+  // Update scopes to include both Sheets and Drive permissions
   const auth = new google.auth.GoogleAuth({
     credentials,
-    scopes: ['https://www.googleapis.com/auth/spreadsheets']
+    scopes: [
+      'https://www.googleapis.com/auth/spreadsheets',
+      'https://www.googleapis.com/auth/drive.file'
+    ]
   });
 
   return google.sheets({ version: 'v4', auth });
@@ -85,13 +89,27 @@ export async function createSheet(title) {
 
     // Move the sheet to the correct folder if a folder ID is provided
     if (googleSheetsDbId) {
-      const drive = google.drive({ version: 'v3', auth: sheets.context._options.auth });
-      await drive.files.update({
-        fileId: spreadsheetId,
-        addParents: googleSheetsDbId,
-        fields: 'id, parents'
-      });
-      console.log('Sheet moved to folder:', { folderId: googleSheetsDbId });
+      try {
+        const drive = google.drive({ version: 'v3', auth: sheets.context._options.auth });
+        
+        // First, verify the folder exists and we have access
+        await drive.files.get({
+          fileId: googleSheetsDbId,
+          fields: 'id, name'
+        });
+
+        // Move the file to the specified folder
+        await drive.files.update({
+          fileId: spreadsheetId,
+          addParents: googleSheetsDbId,
+          fields: 'id, parents'
+        });
+        
+        console.log('Sheet moved to folder:', { folderId: googleSheetsDbId });
+      } catch (moveError) {
+        console.error('Error moving sheet to folder:', moveError);
+        // Don't throw here - we still created the sheet successfully
+      }
     }
 
     // Initialize metadata

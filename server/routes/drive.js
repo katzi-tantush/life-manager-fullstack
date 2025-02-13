@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { userAuthMiddleware } from '../middleware/auth.js';
-import { uploadFile } from '../services/drive.js';
+import { getDriveService } from '../services/google/index.js';
+import { getDriveFolderIds } from '../config/service-account.js';
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -11,6 +12,7 @@ const upload = multer({
 });
 
 const router = Router();
+const driveService = getDriveService();
 
 router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, res) => {
   try {
@@ -21,7 +23,8 @@ router.post('/upload', userAuthMiddleware, upload.single('file'), async (req, re
       });
     }
 
-    const result = await uploadFile(req.file);
+    const { uploadsFolderId } = getDriveFolderIds();
+    const result = await driveService.uploadFile(req.file, uploadsFolderId);
     
     if (result.status === 'error') {
       return res.status(500).json(result);

@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import { userAuthMiddleware } from '../middleware/auth.js';
-import { createSheet, readSheetData, writeSheetData } from '../services/sheets.js';
+import { getSheetsService } from '../services/google/index.js';
+import { getDriveFolderIds } from '../config/service-account.js';
 
 const router = Router();
+const sheetsService = getSheetsService();
 
 router.post('/create', userAuthMiddleware, async (req, res) => {
   try {
@@ -22,7 +24,8 @@ router.post('/create', userAuthMiddleware, async (req, res) => {
       });
     }
 
-    const result = await createSheet(title);
+    const { googleSheetsDbId } = getDriveFolderIds();
+    const result = await sheetsService.createSheet(title, googleSheetsDbId);
     res.json(result);
   } catch (error) {
     console.error('Sheet creation error:', error);
@@ -46,7 +49,7 @@ router.get('/:spreadsheetId/read', userAuthMiddleware, async (req, res) => {
       });
     }
 
-    const result = await readSheetData(spreadsheetId, range);
+    const result = await sheetsService.readSheet(spreadsheetId, range || 'Data!A1:Z1000');
     res.json(result);
   } catch (error) {
     console.error('Sheet read error:', error);
@@ -60,7 +63,7 @@ router.get('/:spreadsheetId/read', userAuthMiddleware, async (req, res) => {
 router.post('/:spreadsheetId/write', userAuthMiddleware, async (req, res) => {
   try {
     const { spreadsheetId } = req.params;
-    const { data, schema } = req.body;
+    const { data, range = 'Data' } = req.body;
 
     // Ensure user is authenticated and has valid session
     if (!req.session || !req.session.email) {
@@ -77,14 +80,7 @@ router.post('/:spreadsheetId/write', userAuthMiddleware, async (req, res) => {
       });
     }
 
-    if (!schema) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Schema is required'
-      });
-    }
-
-    const result = await writeSheetData(spreadsheetId, data, schema);
+    const result = await sheetsService.writeSheet(spreadsheetId, range, data);
     res.json(result);
   } catch (error) {
     console.error('Sheet write error:', error);
