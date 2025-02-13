@@ -7,4 +7,4 @@ export function validateAllConfigs() {
 }
 
 export { oauthConfig } from './oauth.js';
-export { serviceAccountConfig, getDriveConfig } from './service-account.js';
+export { serviceAccountConfig, getGoogleServiceConfig } from './service-account.js';
