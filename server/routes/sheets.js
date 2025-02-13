@@ -1,34 +1,27 @@
 import { Router } from 'express';
 import { userAuthMiddleware } from '../middleware/auth.js';
-import { getSheetsService } from '../services/google/index.js';
-import { getDriveConfig } from '../config/service-account.js';
+import { getGoogleSheetsService } from '../services/google/index.js';
+import { getGoogleServiceConfig } from '../config/service-account.js';
 
 const router = Router();
-const sheetsService = getSheetsService();
+const sheetsService = getGoogleSheetsService();
 
-router.post('/create', userAuthMiddleware, async (req, res) => {
+router.get('/read', userAuthMiddleware, async (req, res) => {
   try {
-    const { title } = req.body;
-    if (!title) {
+    const { range } = req.query;
+    const { testSpreadsheetId } = getGoogleServiceConfig();
+
+    if (!range) {
       return res.status(400).json({
         status: 'error',
-        message: 'Title is required'
+        message: 'Range parameter is required'
       });
     }
 
-    // Ensure user is authenticated and has valid session
-    if (!req.session || !req.session.email) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authentication required'
-      });
-    }
-
-    const { googleSheetsDbId } = getDriveConfig();
-    const result = await sheetsService.createSheet(title, googleSheetsDbId);
+    const result = await sheetsService.readSpreadsheetRange(testSpreadsheetId, range);
     res.json(result);
   } catch (error) {
-    console.error('Sheet creation error:', error);
+    console.error('Spreadsheet read error:', error);
     res.status(500).json({
       status: 'error',
       message: error.message
@@ -36,42 +29,10 @@ router.post('/create', userAuthMiddleware, async (req, res) => {
   }
 });
 
-router.get('/:spreadsheetId/read', userAuthMiddleware, async (req, res) => {
+router.post('/write', userAuthMiddleware, async (req, res) => {
   try {
-    const { spreadsheetId } = req.params;
-    const { range } = req.query;
-
-    // Ensure user is authenticated and has valid session
-    if (!req.session || !req.session.email) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authentication required'
-      });
-    }
-
-    const result = await sheetsService.readSheet(spreadsheetId, range || 'Data!A1:Z1000');
-    res.json(result);
-  } catch (error) {
-    console.error('Sheet read error:', error);
-    res.status(500).json({
-      status: 'error',
-      message: error.message
-    });
-  }
-});
-
-router.post('/:spreadsheetId/write', userAuthMiddleware, async (req, res) => {
-  try {
-    const { spreadsheetId } = req.params;
-    const { data, range = 'Data' } = req.body;
-
-    // Ensure user is authenticated and has valid session
-    if (!req.session || !req.session.email) {
-      return res.status(401).json({
-        status: 'error',
-        message: 'Authentication required'
-      });
-    }
+    const { data, range } = req.body;
+    const { testSpreadsheetId } = getGoogleServiceConfig();
 
     if (!data || !Array.isArray(data)) {
       return res.status(400).json({
@@ -80,10 +41,17 @@ router.post('/:spreadsheetId/write', userAuthMiddleware, async (req, res) => {
       });
     }
 
-    const result = await sheetsService.writeSheet(spreadsheetId, range, data);
+    if (!range) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Range is required'
+      });
+    }
+
+    const result = await sheetsService.writeSpreadsheetRange(testSpreadsheetId, range, data);
     res.json(result);
   } catch (error) {
-    console.error('Sheet write error:', error);
+    console.error('Spreadsheet write error:', error);
     res.status(500).json({
       status: 'error',
       message: error.message

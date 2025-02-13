@@ -1,7 +1,7 @@
 import { getGoogleApiService } from './base.js';
 import { getDriveService } from './drive.js';
 
-export class SheetsService {
+export class GoogleSheetsService {
   constructor() {
     this.service = getGoogleApiService();
     this.driveService = getDriveService();
@@ -15,11 +15,10 @@ export class SheetsService {
     return this.service.getClient('sheets', 'v4', this.scopes);
   }
 
-  async createSheet(title, folderId) {
+  async createSpreadsheet(title, folderId) {
     try {
       const sheets = await this.getClient();
       
-      // First create the spreadsheet without folder specification
       const response = await sheets.spreadsheets.create({
         requestBody: {
           properties: { title },
@@ -49,7 +48,6 @@ export class SheetsService {
 
       const spreadsheetId = response.data.spreadsheetId;
 
-      // If a folder ID is provided, move the spreadsheet to that folder
       if (folderId) {
         await this.driveService.moveFile(spreadsheetId, folderId);
       }
@@ -60,7 +58,7 @@ export class SheetsService {
         sheets: response.data.sheets
       };
     } catch (error) {
-      console.error('Sheets creation error:', error);
+      console.error('Spreadsheet creation error:', error);
       return {
         status: 'error',
         message: this.formatError(error)
@@ -68,7 +66,7 @@ export class SheetsService {
     }
   }
 
-  async readSheet(spreadsheetId, range) {
+  async readSpreadsheetRange(spreadsheetId, range) {
     try {
       const sheets = await this.getClient();
       
@@ -82,7 +80,7 @@ export class SheetsService {
         values: response.data.values
       };
     } catch (error) {
-      console.error('Sheets read error:', error);
+      console.error('Spreadsheet read error:', error);
       return {
         status: 'error',
         message: this.formatError(error)
@@ -90,7 +88,7 @@ export class SheetsService {
     }
   }
 
-  async writeSheet(spreadsheetId, range, values) {
+  async writeSpreadsheetRange(spreadsheetId, range, values) {
     try {
       const sheets = await this.getClient();
       
@@ -106,7 +104,7 @@ export class SheetsService {
         updatedCells: response.data.updatedCells
       };
     } catch (error) {
-      console.error('Sheets write error:', error);
+      console.error('Spreadsheet write error:', error);
       return {
         status: 'error',
         message: this.formatError(error)
@@ -129,12 +127,11 @@ export class SheetsService {
   }
 }
 
-// Singleton instance
 let instance = null;
 
-export function getSheetsService() {
+export function getGoogleSheetsService() {
   if (!instance) {
-    instance = new SheetsService();
+    instance = new GoogleSheetsService();
   }
   return instance;
 }
