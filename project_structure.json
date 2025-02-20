@@ -1,0 +1,145 @@
+{
+  "server": {
+    "config": {
+      "environment.js": "file",
+      "index.js": "file",
+      "oauth.js": "file",
+      "service-account.js": "file"
+    },
+    "constants": {
+      "auth.js": "file"
+    },
+    "index.js": "file",
+    "middleware": {
+      "auth.js": "file",
+      "session.js": "file"
+    },
+    "routes": {
+      "auth.js": "file",
+      "drive.js": "file",
+      "process.js": "file",
+      "sheets.js": "file"
+    },
+    "services": {
+      "api": {
+        "process.js": "file"
+      },
+      "drive.js": "file",
+      "fileProcessor": {
+        "imageProcessor.js": "file",
+        "index.js": "file"
+      },
+      "google": {
+        "base.js": "file",
+        "drive.js": "file",
+        "index.js": "file",
+        "sheets.js": "file",
+        "vision.js": "file"
+      },
+      "session.js": "file",
+      "sheets.js": "file",
+      "vision.js": "file"
+    },
+    "utils": {
+      "validation.js": "file"
+    }
+  },
+  "src": {
+    "App.tsx": "file",
+    "components": {
+      "auth": {
+        "LoginForm.tsx": "file",
+        "UserProfile.tsx": "file"
+      },
+      "common": {
+        "ErrorAlert.tsx": "file",
+        "LoadingSpinner.tsx": "file"
+      },
+      "drive": {
+        "FileUpload.tsx": "file",
+        "FolderList.tsx": "file",
+        "ImageUpload.tsx": "file"
+      },
+      "layout": {
+        "AppLayout.tsx": "file",
+        "AuthenticatedLayout.tsx": "file",
+        "Hub.tsx": "file",
+        "PageHeader.tsx": "file"
+      },
+      "sheets": {
+        "SheetsTest.tsx": "file"
+      },
+      "ui": {
+        "Button.tsx": "file",
+        "Card.tsx": "file",
+        "Container.tsx": "file",
+        "IconButton.tsx": "file"
+      }
+    },
+    "constants": {
+      "auth.ts": "file"
+    },
+    "context": {
+      "AuthContext.tsx": "file",
+      "DriveContext.tsx": "file",
+      "ErrorContext.tsx": "file"
+    },
+    "hooks": {
+      "useAuth.ts": "file",
+      "useDrive.ts": "file",
+      "useErrorHandling.ts": "file",
+      "useFileUpload.ts": "file"
+    },
+    "index.css": "file",
+    "main.tsx": "file",
+    "services": {
+      "api": {
+        "auth.ts": "file",
+        "drive.ts": "file",
+        "process.ts": "file",
+        "processing.ts": "file",
+        "sheets.ts": "file"
+      },
+      "config.ts": "file"
+    },
+    "styles": {
+      "base": {
+        "reset.css": "file",
+        "variables.css": "file"
+      },
+      "components": {
+        "auth.css": "file",
+        "common.css": "file",
+        "drive.css": "file"
+      },
+      "main.css": "file",
+      "utils": {
+        "breakpoints.css": "file"
+      }
+    },
+    "types": {
+      "auth.ts": "file",
+      "config.ts": "file",
+      "drive.ts": "file",
+      "google": {
+        "auth.ts": "file"
+      },
+      "processing.ts": "file",
+      "react-oauth-google.d.ts": "file",
+      "session.ts": "file"
+    },
+    "utils": {
+      "auth.ts": "file",
+      "drive.ts": "file",
+      "error.ts": "file",
+      "errors": {
+        "AuthError.ts": "file",
+        "DriveError.ts": "file",
+        "ProcessingError.ts": "file",
+        "index.ts": "file"
+      },
+      "validation.ts": "file"
+    },
+    "vite-env.d.ts": "file"
+  }
+}
